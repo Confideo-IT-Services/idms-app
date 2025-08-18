@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from django.utils import timezone
 from .models import School, ClassRoom, Student, UploadLink, FormTemplate, IdCardTemplate, User
 import uuid
-from .permissions import IsSuperAdmin, IsSchoolAdmin, IsSameSchoolOrSuper, IsSuperOrSchoolAdmin
+from .permissions import IsSuperAdmin, IsSchoolAdmin, IsSameSchoolOrSuper, IsSuperOrSchoolAdmin, SuperAdminWrite_SchoolAdminRead,SchoolAdminCreateOnly
 from .serializers import *  # your serializers
 
 
@@ -93,7 +93,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 class FormTemplateViewSet(viewsets.ModelViewSet):
     queryset = FormTemplate.objects.select_related("school").all().order_by("-id")
     serializer_class = FormTemplateSerializer
-    permission_classes = [IsSuperOrSchoolAdmin]
+    permission_classes = [SuperAdminWrite_SchoolAdminRead]
 
     def get_queryset(self):
         u = self.request.user
@@ -120,13 +120,24 @@ class FormTemplateViewSet(viewsets.ModelViewSet):
             serializer.save()
 
 class UploadLinkViewSet(viewsets.ModelViewSet):
-    queryset = UploadLink.objects.select_related("school","classroom").all().order_by("-id")
-    permission_classes = [IsSuperOrSchoolAdmin]
-
-    def get_serializer_class(self):
-        if self.action in ["create", "update", "partial_update"]:
-            return UploadLinkCreateSerializer
-        return UploadLinkSerializer
+    serializer_class = UploadLinkSerializer
+    queryset = UploadLink.objects.select_related("school","classroom","template").all()
+    permission_classes = [SchoolAdminCreateOnly]
+    
+    def get_queryset(self):
+        u = self.request.user
+        qs = super().get_queryset()
+        if getattr(u, "role", "") == "SCHOOL_ADMIN":
+            qs = qs.filter(school_id=u.school_id)
+        return qs
+    
+    # def perform_create(self, serializer):
+    #     u = self.request.user
+    #     if getattr(u, "role", "") == "SCHOOL_ADMIN":
+    #         # attach their school but DO NOT strip template/classroom provided by request
+    #         serializer.save(school_id=u.school_id)
+    #     else:
+    #         serializer.save()
 
     @action(detail=True, methods=["post"])
     def activate(self, request, pk=None):
@@ -157,3 +168,10 @@ class UploadLinkViewSet(viewsets.ModelViewSet):
         link.token = uuid.uuid4()
         link.save()
         return Response(UploadLinkSerializer(link).data)
+    
+    @action(detail=False, methods=["delete"], url_path="cleanup")
+    def cleanup_expired(self, request):
+        expired = self.get_queryset().filter(expires_at__lt=now())
+        count = expired.count()
+        expired.delete()
+        return Response({"deleted": count})

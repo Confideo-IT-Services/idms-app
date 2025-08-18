@@ -4,3 +4,5 @@ mysqlclient
 boto3
 django-cors-headers
 python-decouple
+djangorestframework-simplejwt
+psycopg2

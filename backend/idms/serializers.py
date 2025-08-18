@@ -32,29 +32,100 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+class SchoolMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = School
+        fields = ["id", "name"]
+
 class FormTemplateSerializer(serializers.ModelSerializer):
-    school = SchoolSerializer(read_only=True)
+    school = SchoolMiniSerializer(read_only=True)
     school_id = serializers.PrimaryKeyRelatedField(
-        write_only=True, queryset=School.objects.all(), source="school", required=False
+        source="school",                      # map incoming school_id -> school
+        queryset=School.objects.all(),
+        write_only=True,
+        required=True                         # required for SUPER_ADMIN create
     )
 
     class Meta:
         model = FormTemplate
         fields = ["id", "school", "school_id", "name", "fields", "created_at"]
 
-class UploadLinkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UploadLink
-        fields = [
-            "id", "token", "school", "classroom", "expires_at",
-            "is_active", "notes", "max_uses", "uses_count",
-        ]
-        read_only_fields = ["id", "token", "uses_count"]
+    def get_school_read(self, obj):
+        return {"id": obj.school_id, "name": getattr(obj.school, "name", None)}
 
-class UploadLinkCreateSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        u = self.context["request"].user
+        if getattr(u, "role", "") == "SUPER_ADMIN":
+            if not attrs.get("school") and not getattr(self.instance, "school_id", None):
+                raise serializers.ValidationError({"school": "School is required."})
+        return attrs
+
+    def create(self, validated_data):
+        u = self.context["request"].user
+        # SCHOOL_ADMIN write should never reach here due to permission, but be safe:
+        if getattr(u, "role", "") != "SUPER_ADMIN":
+            raise serializers.ValidationError("Only SUPER_ADMIN can create templates.")
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        u = self.context["request"].user
+        if getattr(u, "role", "") != "SUPER_ADMIN":
+            raise serializers.ValidationError("Only SUPER_ADMIN can modify templates.")
+        return super().update(instance, validated_data)
+    
+class CurrentUserSchool(serializers.CurrentUserDefault):
+    # small helper to act as a default for FK
+    def __call__(self, serializer_field):
+        user = serializer_field.context["request"].user
+        return getattr(user, "school", None)
+
+class UploadLinkSerializer(serializers.ModelSerializer):
+    # SCHOOL_ADMIN won’t send school; SUPER_ADMIN can read/list but not POST
+    school = serializers.PrimaryKeyRelatedField(queryset=School.objects.all(), required=False, allow_null=True, default=CurrentUserSchool())
+    classroom = serializers.PrimaryKeyRelatedField(queryset=ClassRoom.objects.all(), required=True)
+    template  = serializers.PrimaryKeyRelatedField(queryset=FormTemplate.objects.all(), required=True)
+
     class Meta:
         model = UploadLink
-        fields = ["school", "classroom", "expires_at", "is_active", "notes", "max_uses"]
+        fields = ["id", "token", "school", "classroom", "template",
+                  "expires_at", "is_active", "notes", "max_uses", "uses_count"]
+        read_only_fields = ["id", "token", "uses_count"]
+        extra_kwargs = {
+            # double-tell DRF that school is not required
+            "school": {"required": False, "allow_null": True},
+        }
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        school = attrs.get("school") or getattr(self.instance, "school", None)
+        if getattr(user, "role", "") == "SCHOOL_ADMIN":
+            # force school to the user’s school
+            school = getattr(user, "school", None)
+            attrs["school"] = school
+
+        if school is None:
+            raise serializers.ValidationError({"school": "Your account is not assigned to a school."})
+
+        tmpl = attrs.get("template")  or getattr(self.instance, "template", None)
+        cls  = attrs.get("classroom") or getattr(self.instance, "classroom", None)
+
+        if tmpl is None:
+            raise serializers.ValidationError({"template": "Template is required."})
+        if tmpl.school_id != school.id:
+            raise serializers.ValidationError({"template": "Template belongs to a different school."})
+        if cls and cls.school_id != school.id:
+            raise serializers.ValidationError({"classroom": "Classroom belongs to a different school."})
+        return attrs
+
+    def create(self, validated_data):
+        # At this point SCHOOL_ADMIN already has school in validated_data
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        user = self.context["request"].user
+        if getattr(user, "role", "") == "SCHOOL_ADMIN":
+            validated_data["school"] = user.school
+        return super().update(instance, validated_data)
 
 class ClassRoomSerializer(serializers.ModelSerializer):
     school = SchoolSerializer(read_only=True)

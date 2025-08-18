@@ -13,8 +13,12 @@ from .serializers import SchoolSerializer, ClassRoomSerializer, StudentSerialize
 def public_form_schema(request, token):
     """Return the dynamic form schema for this token."""
     link = get_object_or_404(UploadLink, token=token)
+
     if not link.is_valid():
         return Response({"detail": "Link is invalid or expired."}, status=400)
+    
+    if not link.template_id or not link.template.fields:
+        return Response({"detail": "No form template configured for this link."}, status=400)    
 
     fields = link.template.fields if link.template else [
         {"name":"full_name","label":"Student Name","type":"text","required":True},
@@ -27,8 +31,17 @@ def public_form_schema(request, token):
         "class": link.classroom.class_name,
         "section": link.classroom.section,
         "expires_at": link.expires_at,
-        "fields": fields
+        "fields": link.template.fields,
+        "template_id": link.template_id,
+        "source": "template"
     })
+    # return Response({
+    #     "school": link.school.name,
+    #     "class": link.classroom.class_name,
+    #     "section": link.classroom.section,
+    #     "expires_at": link.expires_at,
+    #     "fields": fields
+    # })
 
 
 CORE_MAPPABLE = {"full_name","dob","gender","parent_email","parent_phone","photo"}

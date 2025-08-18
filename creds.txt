@@ -1,0 +1,7 @@
+SUPER_ADMIN:
+    "new_admin"
+    "Super1@user"
+
+SCHOOL_ADMIN
+    "sch_admin"
+    "Change@123"
