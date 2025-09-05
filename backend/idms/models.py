@@ -116,10 +116,14 @@ class Student(models.Model):
 
 class IdCardTemplate(models.Model):
     school = models.ForeignKey("School", on_delete=models.CASCADE, related_name="id_templates")
-    name = models.CharField(max_length=80)
-    html = models.TextField()  # HTML with placeholders like {{full_name}}, {{class}}, {{photo_url}}
+    name = models.CharField(max_length=100)
+    background = models.ImageField(upload_to="id_templates/backgrounds/", blank=True, null=True)
+    fields = models.JSONField(default=dict)  # coordinates & styles for placeholders
     created_at = models.DateTimeField(auto_now_add=True)
     is_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.school.name} - {self.name}"
 
 
 class SubmissionIndex(models.Model):
@@ -142,5 +146,3 @@ class SubmissionIndex(models.Model):
 
     def __str__(self):
         return f"{self.school_id}:{self.field_name}={self.field_value}"
-
-        

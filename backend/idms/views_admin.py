@@ -8,6 +8,11 @@ from .models import School, ClassRoom, Student, UploadLink, FormTemplate, IdCard
 import uuid
 from .permissions import IsSuperAdmin, IsSchoolAdmin, IsSameSchoolOrSuper, IsSuperOrSchoolAdmin, SuperAdminWrite_SchoolAdminRead,SchoolAdminCreateOnly
 from .serializers import *  # your serializers
+from django.http import FileResponse
+from django.template import Template, Context
+from xhtml2pdf import pisa
+import io
+from .utils import generate_id_cards
 
 
 class SchoolViewSet(viewsets.ModelViewSet):
@@ -89,6 +94,27 @@ class StudentViewSet(viewsets.ModelViewSet):
         student.status = "APPROVED"
         student.save()
         return Response({"status": student.status})
+    
+    @action(detail=False, methods=["get"], permission_classes=[IsSuperAdmin])
+    def submissions(self, request):
+        # SUPER_ADMIN view: see all
+        qs = self.get_queryset().filter(status="VERIFIED")
+        ser = StudentSerializer(qs, many=True)
+        return Response(ser.data)
+    
+    @action(detail=False, methods=["get"], permission_classes=[IsSuperAdmin])
+    def generate_ids(self, request):
+        school_id = request.query_params.get("school")
+        class_id = request.query_params.get("classroom")
+        students = self.get_queryset().filter(school_id=school_id, classroom_id=class_id, status="VERIFIED")
+
+        try:
+            tmpl = IdCardTemplate.objects.get(school_id=school_id, is_default=True)
+        except IdCardTemplate.DoesNotExist:
+            return Response({"detail": "No default ID card template for this school."}, status=400)
+
+        pdf_buf = generate_id_cards(students, tmpl)
+        return FileResponse(pdf_buf, as_attachment=True, filename="idcards.pdf")
 
 class FormTemplateViewSet(viewsets.ModelViewSet):
     queryset = FormTemplate.objects.select_related("school").all().order_by("-id")
@@ -130,14 +156,6 @@ class UploadLinkViewSet(viewsets.ModelViewSet):
         if getattr(u, "role", "") == "SCHOOL_ADMIN":
             qs = qs.filter(school_id=u.school_id)
         return qs
-    
-    # def perform_create(self, serializer):
-    #     u = self.request.user
-    #     if getattr(u, "role", "") == "SCHOOL_ADMIN":
-    #         # attach their school but DO NOT strip template/classroom provided by request
-    #         serializer.save(school_id=u.school_id)
-    #     else:
-    #         serializer.save()
 
     @action(detail=True, methods=["post"])
     def activate(self, request, pk=None):
@@ -175,3 +193,27 @@ class UploadLinkViewSet(viewsets.ModelViewSet):
         count = expired.count()
         expired.delete()
         return Response({"deleted": count})
+
+# backend/idcards/views_admin.py
+class IdCardTemplateViewSet(viewsets.ModelViewSet):
+    serializer_class = IdCardTemplateSerializer
+    queryset = IdCardTemplate.objects.select_related("school").all()
+    permission_classes = [IsSuperAdmin]   # only SUPER_ADMIN uploads/updates
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        u = self.request.user
+        if getattr(u, "role", "") == "SCHOOL_ADMIN":
+            qs = qs.filter(school_id=u.school_id)
+        return qs
+    
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if instance.is_default:
+            # unset all others for this school
+            IdCardTemplate.objects.filter(school=instance.school).exclude(id=instance.id).update(is_default=False)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.is_default:
+            IdCardTemplate.objects.filter(school=instance.school).exclude(id=instance.id).update(is_default=False)

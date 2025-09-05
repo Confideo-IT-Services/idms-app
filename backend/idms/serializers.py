@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import School, ClassRoom, Student, UploadLink, FormTemplate, User
+from .models import School, ClassRoom, Student, UploadLink, FormTemplate, User, IdCardTemplate
 
 class SchoolSerializer(serializers.ModelSerializer):
     class Meta:
@@ -160,3 +160,8 @@ class ParentSubmissionSerializer(serializers.Serializer):
     # parent_phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
     # photo = serializers.ImageField(required=True)
     pass
+
+class IdCardTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IdCardTemplate
+        fields = ["id", "school", "name", "background", "fields", "created_at", "is_default"]
