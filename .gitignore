@@ -1,2 +1,4 @@
 **/__pycache__/
 **/*.py3venv
+py3venv
+**/package*.json
