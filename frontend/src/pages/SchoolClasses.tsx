@@ -59,7 +59,7 @@ export default function SchoolClasses() {
       {error && <div style={{ color: "red" }}>{error}</div>}
 
       {!loading && !editing && (
-        <table style={{ width: "100%", marginTop: 12 }}>
+        <table className="table" style={{ width: "100%", marginTop: 12 }}>
           <thead><tr><th>ID</th><th>Class</th><th>Section</th><th>Total</th><th>Actions</th></tr></thead>
           <tbody>
             {items.map(c => (

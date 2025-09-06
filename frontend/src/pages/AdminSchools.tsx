@@ -60,7 +60,7 @@ export default function AdminSchools() {
       {error && <div style={{ color: "red" }}>{error}</div>}
 
       {!loading && !editing && (
-        <table style={{ width: "100%", marginTop: 12 }}>
+        <table className="table" style={{ width: "100%", marginTop: 12 }}>
           <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
           <tbody>
             {schools.map(s => (

@@ -76,7 +76,7 @@ export default function AdminUsers() {
       {error && <div style={{ color: "red" }}>{error}</div>}
 
       {!loading && !editing && (
-        <table style={{ width: "100%", marginTop: 12 }}>
+        <table className="table" style={{ width: "100%", marginTop: 12 }}>
           <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Email</th><th>School</th><th>Actions</th></tr></thead>
           <tbody>
             {users.map(u => (

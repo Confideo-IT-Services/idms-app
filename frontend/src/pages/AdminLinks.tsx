@@ -85,138 +85,142 @@ export default function AdminLinks() {
   }
 
   return (
-    <div style={{ maxWidth: 960, margin: '2rem auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Upload Links</h2>
-        <a href="/templates">
-          <button type="button">Templates</button>
-        </a>
-      </div>
+    <div className="app-container">
+      <div className="card">
+        <div style={{ maxWidth: 960, margin: '2rem auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>Upload Links</h2>
+            <a href="/templates">
+              <button type="button">Templates</button>
+            </a>
+          </div>
 
-      <form
-        onSubmit={createLink}
-        style={{
-          display: 'grid',
-          gap: 8,
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          marginBottom: 20,
-        }}
-      >
-        {me?.role === 'SUPER_ADMIN' && (
-          <select name="school" value={form.school} onChange={onChange} required>
-            <option value="">Select School</option>
-            {schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        )}
-        <select name="classroom" value={form.classroom} onChange={onChange} required>
-          <option value="">Select Class</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.class_name}
-              {c.section ? `-${c.section}` : ''}
-            </option>
-          ))}
-        </select>
-        <select name="template" value={form.template} onChange={onChange} required>
-          <option value="">Select Template</option>
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <input
-          name="days"
-          type="number"
-          min={1}
-          placeholder="Days (14)"
-          value={form.days}
-          onChange={onChange}
-        />
-        <input
-          name="max_uses"
-          placeholder="Max uses (optional)"
-          value={form.max_uses}
-          onChange={onChange}
-        />
-        <input name="notes" placeholder="Notes" value={form.notes} onChange={onChange} />
-        <button type="submit">Create</button>
-      </form>
+          <form
+            onSubmit={createLink}
+            style={{
+              display: 'grid',
+              gap: 8,
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              marginBottom: 20,
+            }}
+          >
+            {me?.role === 'SUPER_ADMIN' && (
+              <select name="school" value={form.school} onChange={onChange} required>
+                <option value="">Select School</option>
+                {schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            )}
+            <select name="classroom" value={form.classroom} onChange={onChange} required>
+              <option value="">Select Class</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.class_name}
+                  {c.section ? `-${c.section}` : ''}
+                </option>
+              ))}
+            </select>
+            <select name="template" value={form.template} onChange={onChange} required>
+              <option value="">Select Template</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <input
+              name="days"
+              type="number"
+              min={1}
+              placeholder="Days (14)"
+              value={form.days}
+              onChange={onChange}
+            />
+            <input
+              name="max_uses"
+              placeholder="Max uses (optional)"
+              value={form.max_uses}
+              onChange={onChange}
+            />
+            <input name="notes" placeholder="Notes" value={form.notes} onChange={onChange} />
+            <button type="submit">Create</button>
+          </form>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Token</th>
-            <th>Share Link</th>
-            <th>Active</th>
-            <th>Expires</th>
-            <th>Uses</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {links.map((l) => {
-            const shareUrl = `${location.origin}/u/${l.token}`
-            return (
-              <tr key={l.id}>
-                <td>{l.id}</td>
-                <td style={{ fontFamily: 'monospace' }}>{l.token}</td>
-                <td>
-                  <a href={shareUrl} target="_blank" rel="noreferrer">
-                    {shareUrl}
-                  </a>
-                </td>
-                <td>{l.is_active ? 'Yes' : 'No'}</td>
-                <td>{dayjs(l.expires_at).format('YYYY-MM-DD')}</td>
-                <td>{templates.find(t => t.id === l.template)?.name ?? <i>None</i>}</td>
-                <td>
-                  {l.uses_count}
-                  {l.max_uses ? ` / ${l.max_uses}` : ''}
-                </td>
-                <td style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => action(`/api/upload-links/${l.id}/activate/`)}>
-                    Activate
-                  </button>
-                  <button onClick={() => action(`/api/upload-links/${l.id}/deactivate/`)}>
-                    Deactivate
-                  </button>
-                  <button onClick={() => action(`/api/upload-links/${l.id}/extend/`)}>
-                    Extend +7d
-                  </button>
-                  <button onClick={() => action(`/api/upload-links/${l.id}/rotate_token/`)}>
-                    Rotate
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (confirm("Delete this link?")) {
-                        await api.delete(`/upload-links/${l.id}/`)
-                        setLinks(links.filter(x => x.id !== l.id))
-                      }
-                    }}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (confirm("Delete all expired links?")) {
-                        const res = await api.delete('/upload-links/cleanup/')
-                        alert(`Deleted ${res.data.deleted} expired links`)
-                        // refresh list
-                        const { data } = await api.get('/upload-links/')
-                        setLinks(data)
-                      }
-                    }}
-                  >
-                    Cleanup Expired
-                  </button>
-
-                </td>
+          <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Token</th>
+                <th>Share Link</th>
+                <th>Active</th>
+                <th>Expires</th>
+                <th>Uses</th>
+                <th>Actions</th>
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {links.map((l) => {
+                const shareUrl = `${location.origin}/u/${l.token}`
+                return (
+                  <tr key={l.id}>
+                    <td>{l.id}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{l.token}</td>
+                    <td>
+                      <a href={shareUrl} target="_blank" rel="noreferrer">
+                        {shareUrl}
+                      </a>
+                    </td>
+                    <td>{l.is_active ? 'Yes' : 'No'}</td>
+                    <td>{dayjs(l.expires_at).format('YYYY-MM-DD')}</td>
+                    <td>{templates.find(t => t.id === l.template)?.name ?? <i>None</i>}</td>
+                    <td>
+                      {l.uses_count}
+                      {l.max_uses ? ` / ${l.max_uses}` : ''}
+                    </td>
+                    <td style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => action(`/api/upload-links/${l.id}/activate/`)}>
+                        Activate
+                      </button>
+                      <button onClick={() => action(`/api/upload-links/${l.id}/deactivate/`)}>
+                        Deactivate
+                      </button>
+                      <button onClick={() => action(`/api/upload-links/${l.id}/extend/`)}>
+                        Extend +7d
+                      </button>
+                      <button onClick={() => action(`/api/upload-links/${l.id}/rotate_token/`)}>
+                        Rotate
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (confirm("Delete this link?")) {
+                            await api.delete(`/upload-links/${l.id}/`)
+                            setLinks(links.filter(x => x.id !== l.id))
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (confirm("Delete all expired links?")) {
+                            const res = await api.delete('/upload-links/cleanup/')
+                            alert(`Deleted ${res.data.deleted} expired links`)
+                            // refresh list
+                            const { data } = await api.get('/upload-links/')
+                            setLinks(data)
+                          }
+                        }}
+                      >
+                        Cleanup Expired
+                      </button>
+
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

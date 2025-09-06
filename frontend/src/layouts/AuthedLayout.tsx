@@ -27,7 +27,8 @@ export default function AuthedLayout() {
             <Link to="/admin/users">School Admins</Link>
             <Link to="/admin/templates">Templates</Link>
             <Link to="/admin/id-templates">ID Templates</Link>
-            <Link to="/admin/approvals">Approvals / PDFs</Link>
+            <Link to="/admin/submissions">Submissions</Link>
+            {/* wh */}
           </nav>
         ) : (
           <nav style={{ display: "grid", gap: 8 }}>

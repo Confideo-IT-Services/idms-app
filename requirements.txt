@@ -6,3 +6,4 @@ django-cors-headers
 python-decouple
 djangorestframework-simplejwt
 psycopg2
+xhtml2pdf

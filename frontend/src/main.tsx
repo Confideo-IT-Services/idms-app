@@ -1,4 +1,6 @@
 // frontend/src/main.tsx
+import "./styles.css"
+// import App from "./App"
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -9,6 +11,8 @@ import FormTemplates from './pages/FormTemplates'
 import ParentUpload from './pages/ParentUpload'
 import AdminSchools from './pages/AdminSchools'
 import AdminUsers from './pages/AdminUsers'
+import AdminSubmissions from "./pages/AdminSubmissions"
+import AdminIdTemplates from "./pages/AdminIdTemplates"
 import SchoolClasses from './pages/SchoolClasses'
 import SchoolSubmissions from './pages/SchoolSubmissions'
 
@@ -40,7 +44,9 @@ function AppRoutes() {
         {/* Super Admin views */}
         <Route path="admin/schools" element={<AdminSchools />} />
         <Route path="admin/users" element={<AdminUsers />} />
-        <Route path="admin/id-templates" element={<div>ID Templates (Print) (TODO)</div>} />
+        <Route path="admin/id-templates" element={<AdminIdTemplates />} />
+        <Route path="admin/submissions" element={<AdminSubmissions />} />
+        {/* <Route path="admin/id-templates" element={<div>ID Templates (Print) (TODO)</div>} /> */}
         <Route path="admin/approvals" element={<div>Approvals & PDFs (TODO)</div>} />
       </Route>
 

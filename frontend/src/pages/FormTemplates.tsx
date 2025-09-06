@@ -138,7 +138,7 @@ export default function FormTemplates() {
       </div>
 
       {!editing && (
-        <table style={{ width: "100%", marginTop: 16 }}>
+        <table className="table" style={{ width: "100%", marginTop: 16 }}>
           <thead>
             <tr><th>ID</th><th>Name</th><th>School</th><th>#Fields</th><th>Actions</th></tr>
           </thead>
