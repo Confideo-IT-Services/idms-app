@@ -143,7 +143,7 @@ class StudentSerializer(serializers.ModelSerializer):
         model = Student
         fields = [
             "id", "school", "classroom",
-            "full_name", "full_name", "dob", "gender",
+            "full_name", "father_name", "dob", "gender",
             "photo",
             "parent_email", "parent_phone",
             "status",          # <-- include this
@@ -162,6 +162,18 @@ class ParentSubmissionSerializer(serializers.Serializer):
     pass
 
 class IdCardTemplateSerializer(serializers.ModelSerializer):
+    background_url = serializers.SerializerMethodField()
+
     class Meta:
         model = IdCardTemplate
-        fields = ["id", "school", "name", "background", "fields", "created_at", "is_default"]
+        fields = ["id","school","name","background","background_url","fields","is_default","created_at","card_size_mm"]
+
+
+    def get_background_url(self, obj):
+        request = self.context.get("request")
+        if obj.background:
+            try:
+                return request.build_absolute_uri(obj.background.url)
+            except Exception:
+                return obj.background.url
+        return None

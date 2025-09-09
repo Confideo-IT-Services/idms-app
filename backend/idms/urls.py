@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views_admin import UploadLinkViewSet, FormTemplateViewSet, UserViewSet, SchoolViewSet, ClassRoomViewSet, StudentViewSet, IdCardTemplateViewSet
+from .views_admin import UploadLinkViewSet, FormTemplateViewSet, UserViewSet, SchoolViewSet, ClassRoomViewSet, StudentViewSet, IdCardTemplateViewSet, DashboardViewSet
 from .views import public_submit_student, public_link_info, public_form_schema, test_api
 
 router = DefaultRouter()
@@ -17,5 +17,6 @@ urlpatterns = [
     path("public/upload/<uuid:token>/", public_submit_student, name="public-upload"),
     path("public/link/<uuid:token>/", public_link_info, name="public-link-info"),
     path("public/form/<uuid:token>/", public_form_schema),   
+    path("dashboard/", DashboardViewSet.as_view(), name="api-dashboard"),
     path('test/', test_api),
 ]

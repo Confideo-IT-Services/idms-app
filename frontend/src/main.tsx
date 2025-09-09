@@ -24,6 +24,8 @@ function RequireAuth({ children }: { children: JSX.Element }) {
 }
 
 import AuthedLayout from './layouts/AuthedLayout'
+import SchoolDashboard from "./pages/SchoolDashboard"
+import Dashboard from "./pages/Dashboard"
 
 function AppRoutes() {
   return (
@@ -35,6 +37,7 @@ function AppRoutes() {
       {/* Authed + Role-based menu */}
       <Route path="/" element={<RequireAuth><AuthedLayout /></RequireAuth>}>
         {/* School Admin views */}
+        <Route path="/school/dashboard" element={<SchoolDashboard />} />
         <Route index element={<AdminLinks />} />
         <Route path="templates" element={<FormTemplates />} />
         {/* Stubs: add your pages here */}
@@ -42,6 +45,7 @@ function AppRoutes() {
         <Route path="school/submissions" element={<SchoolSubmissions />} />
 
         {/* Super Admin views */}
+        <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="admin/schools" element={<AdminSchools />} />
         <Route path="admin/users" element={<AdminUsers />} />
         <Route path="admin/id-templates" element={<AdminIdTemplates />} />

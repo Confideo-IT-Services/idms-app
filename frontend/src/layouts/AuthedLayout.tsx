@@ -20,9 +20,10 @@ export default function AuthedLayout() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", minHeight: "100vh" }}>
       <aside style={{ borderRight: "1px solid #eee", padding: 16 }}>
-        <h3>Dashboard</h3>
+        <h3>ID Management System</h3>
         {me.role === "SUPER_ADMIN" ? (
           <nav style={{ display: "grid", gap: 8 }}>
+            <Link to="/admin/dashboard">Dashboard</Link>
             <Link to="/admin/schools">Schools</Link>
             <Link to="/admin/users">School Admins</Link>
             <Link to="/admin/templates">Templates</Link>
@@ -32,6 +33,7 @@ export default function AuthedLayout() {
           </nav>
         ) : (
           <nav style={{ display: "grid", gap: 8 }}>
+            <Link to="/school/dashboard">Dashboard</Link>
             <Link to="/school/classes">Classes</Link>
             {/* <Link to="/templates">Form Templates</Link> */}
             <Link to="/">Upload Links</Link>
