@@ -121,6 +121,8 @@ class IdCardTemplate(models.Model):
     fields = models.JSONField(default=dict)  # coordinates & styles for placeholders
     created_at = models.DateTimeField(auto_now_add=True)
     is_default = models.BooleanField(default=False)
+    # store card size in mm for generation
+    card_size_mm = models.JSONField(default=dict, blank=True)  # e.g. {"w":54,"h":86}
 
     def __str__(self):
         return f"{self.school.name} - {self.name}"

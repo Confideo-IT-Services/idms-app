@@ -20,12 +20,6 @@ def public_form_schema(request, token):
     if not link.template_id or not link.template.fields:
         return Response({"detail": "No form template configured for this link."}, status=400)    
 
-    fields = link.template.fields if link.template else [
-        {"name":"full_name","label":"Student Name","type":"text","required":True},
-        {"name":"father_name","label":"Father Name","type":"text","required":True},
-        {"name":"parent_phone","label":"Parent Phone","type":"tel","required":True},
-        {"name":"photo","label":"Photo","type":"file","required":True},
-    ]
     return Response({
         "school": link.school.name,
         "class": link.classroom.class_name,
@@ -35,13 +29,6 @@ def public_form_schema(request, token):
         "template_id": link.template_id,
         "source": "template"
     })
-    # return Response({
-    #     "school": link.school.name,
-    #     "class": link.classroom.class_name,
-    #     "section": link.classroom.section,
-    #     "expires_at": link.expires_at,
-    #     "fields": fields
-    # })
 
 
 CORE_MAPPABLE = {"full_name","dob","gender","parent_email","parent_phone","photo"}
