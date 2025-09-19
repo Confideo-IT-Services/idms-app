@@ -26,7 +26,7 @@ export default function AuthedLayout() {
             <Link to="/admin/dashboard">Dashboard</Link>
             <Link to="/admin/schools">Schools</Link>
             <Link to="/admin/users">School Admins</Link>
-            <Link to="/admin/templates">Templates</Link>
+            <Link to="/school/upload-links">Templates</Link>
             <Link to="/admin/id-templates">ID Templates</Link>
             <Link to="/admin/submissions">Submissions</Link>
             {/* wh */}
@@ -36,7 +36,7 @@ export default function AuthedLayout() {
             <Link to="/school/dashboard">Dashboard</Link>
             <Link to="/school/classes">Classes</Link>
             {/* <Link to="/templates">Form Templates</Link> */}
-            <Link to="/">Upload Links</Link>
+            <Link to="/school/upload-links">Upload Links</Link>
             <Link to="/school/submissions">Submissions</Link>
           </nav>
         )}
