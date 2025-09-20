@@ -22,17 +22,17 @@ export default function Dashboard() {
             <div className="helper">Schools</div>
           </div>
 
-          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/students")}>
+          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/submissions")}>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{data.students}</div>
             <div className="helper">Total Students</div>
           </div>
 
-          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/idcards/generated")}>
+          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/submissions")}>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{data.id_generated}</div>
             <div className="helper">ID Cards Generated</div>
           </div>
 
-          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/idcards/pending")}>
+          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/submissions")}>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{data.id_pending}</div>
             <div className="helper">ID Cards Pending</div>
           </div>

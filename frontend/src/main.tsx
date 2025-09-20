@@ -15,6 +15,7 @@ import AdminSubmissions from "./pages/AdminSubmissions"
 import AdminIdTemplates from "./pages/AdminIdTemplates"
 import SchoolClasses from './pages/SchoolClasses'
 import SchoolSubmissions from './pages/SchoolSubmissions'
+import SchoolUploadLinks from './pages/AdminLinks'
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { me, loading } = useSession()
@@ -29,6 +30,7 @@ import Dashboard from "./pages/Dashboard"
 
 function AppRoutes() {
   return (
+          
     <Routes>
       {/* Public */}
       <Route path="/login" element={<Login onLogin={() => location.replace('/')} />} />
@@ -38,11 +40,12 @@ function AppRoutes() {
       <Route path="/" element={<RequireAuth><AuthedLayout /></RequireAuth>}>
         {/* School Admin views */}
         <Route path="/school/dashboard" element={<SchoolDashboard />} />
-        <Route index element={<AdminLinks />} />
+        <Route index element={<RoleBasedDashboard />} />
         <Route path="templates" element={<FormTemplates />} />
         {/* Stubs: add your pages here */}
         <Route path="school/classes" element={<SchoolClasses />} />
         <Route path="school/submissions" element={<SchoolSubmissions />} />
+        <Route path="school/upload-links" element={<SchoolUploadLinks />} />
 
         {/* Super Admin views */}
         <Route path="/admin/dashboard" element={<Dashboard />} />
@@ -59,6 +62,25 @@ function AppRoutes() {
     </Routes>
   )
 }
+
+function RoleBasedDashboard() {
+  const { me } = useSession()
+
+  if (!me) return <Navigate to="/login" />
+
+  // Example: adjust role keys to match your backend
+  if (me.role === "SUPER_ADMIN") {
+    return <Dashboard />
+  }
+
+  if (me.role === "SCHOOL_ADMIN") {
+    return <SchoolDashboard />
+  }
+
+  // fallback if role is unknown
+  return <div style={{ padding: 20 }}>No dashboard available for your role</div>
+}
+
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <SessionProvider>
