@@ -29,7 +29,7 @@ class FormTemplate(models.Model):
     Example fields JSON:
     [
       {"name":"full_name","label":"Student Name","type":"text","required":true},
-      {"name":"father_name","label":"Father Name","type":"text","required":false},
+      {"name":"fatherName","label":"Father Name","type":"text","required":false},
       {"name":"parent_phone","label":"Parent Phone","type":"tel","required":true},
       {"name":"dob","label":"Date of Birth","type":"date","required":true},
       {"name":"photo","label":"Photo","type":"file","required":true}
@@ -91,7 +91,7 @@ class Student(models.Model):
     school = models.ForeignKey("School", on_delete=models.CASCADE, related_name="students")
     classroom = models.ForeignKey("ClassRoom", on_delete=models.SET_NULL, null=True, related_name="students")
     full_name = models.CharField(max_length=100, blank=True)
-    father_name = models.CharField(max_length=100, blank=True)
+    fatherName = models.CharField(max_length=100, blank=True)
     dob = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True)
     parent_email = models.EmailField(blank=True, null=True)

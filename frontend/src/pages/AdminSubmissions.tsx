@@ -1,4 +1,4 @@
-// frontend/src/pages/AdminSubmissions.tsx
+// AdminSubmissions.tsx
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import * as XLSX from "xlsx";
@@ -12,22 +12,62 @@ export default function AdminSubmissions() {
 
   useEffect(() => {
     api.get("/schools/").then((res) => setSchools(res.data));
+    // ensure classes cleared on mount
+    setClasses([]);
   }, []);
 
+  // Robust loader: normalizes response and client-side filters classes by schoolId
   async function loadClasses(sid: number) {
-    const { data } = await api.get(`/classes/?school=${sid}`);
-    setClasses(data.results ?? data);
+    try {
+      const { data } = await api.get(`/classes/?school=${sid}`);
+      const list = data.results ?? data ?? [];
+
+      // Filter classes so only those that belong to the selected school are kept.
+      // Support various shapes: c.school (number), c.school.id (object), c.school_id
+      const filtered = (list || []).filter((c: any) => {
+        const sMatch =
+          c.school === sid ||
+          (c.school && typeof c.school === "object" && c.school.id === sid) ||
+          c.school_id === sid;
+        return sMatch;
+      });
+
+      setClasses(filtered);
+    } catch (err) {
+      console.error("Failed loading classes", err);
+      setClasses([]); // safe fallback
+    }
   }
+
   async function loadSubmissions() {
     if (!schoolId || !classId) {
       alert("Select school and class");
       return;
     }
+
     const { data } = await api.get(
       `/students/submissions/?school=${schoolId}&classroom=${classId}`
     );
-    console.log(data);
-    setStudents(data);
+
+    const list = data.results ?? data ?? [];
+
+    const filtered = (list || []).filter((s: any) => {
+      const schoolMatch =
+        s.school === schoolId ||
+        (s.school && s.school.id === schoolId) ||
+        s.school_id === schoolId;
+
+      const classroomId =
+        typeof s.classroom === "number"
+          ? s.classroom
+          : s.classroom && (s.classroom.id ?? s.classroom.pk ?? null);
+
+      const classMatch = classroomId === classId;
+
+      return schoolMatch && classMatch;
+    });
+
+    setStudents(filtered);
   }
 
   async function downloadPDF() {
@@ -53,17 +93,24 @@ export default function AdminSubmissions() {
     link.click();
     link.remove();
   }
-  function getClassName(id: number | null) {
-    const c = classes.find((c) => c.id === id);
-    return c ? c.class_name : "";
+
+  function getClassName(idOrObj: number | any) {
+    if (!idOrObj) return "";
+    if (typeof idOrObj === "number") {
+      const c = classes.find((c) => c.id === idOrObj);
+      return c ? c.class_name : "";
+    }
+    if (typeof idOrObj === "object") {
+      return idOrObj.class_name || idOrObj.name || "";
+    }
+    return "";
   }
+
   async function exportToExcel() {
     const worksheet = XLSX.utils.json_to_sheet(
       students.map((s) => ({
         Name: s.full_name,
-        Class:  typeof s.classroom === "number" 
-      ? getClassName(s.classroom) 
-      : s.classroom?.class_name || "",
+        Class: getClassName(s.classroom),
         Phone: s.parent_phone,
         Status: s.status,
       }))
@@ -79,11 +126,18 @@ export default function AdminSubmissions() {
         <h2>Admin Submissions</h2>
 
         <select
-          value={schoolId || ""}
+          value={schoolId ?? ""}
           onChange={(e) => {
-            const sid = Number(e.target.value);
+            const sid = Number(e.target.value) || null;
             setSchoolId(sid);
-            loadClasses(sid);
+            // Clear previous class & students to avoid stale selections
+            setClassId(null);
+            setStudents([]);
+            setClasses([]);
+
+            if (sid) {
+              loadClasses(sid);
+            }
           }}
         >
           <option value="">Select School</option>
@@ -95,13 +149,13 @@ export default function AdminSubmissions() {
         </select>
 
         <select
-          value={classId || ""}
+          value={classId ?? ""}
           onChange={(e) => setClassId(Number(e.target.value))}
         >
           <option value="">Select Class</option>
           {classes.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.class_name}
+              {c.class_name || c.name || `Class ${c.id}`}
             </option>
           ))}
         </select>
@@ -109,6 +163,7 @@ export default function AdminSubmissions() {
         <button onClick={loadSubmissions}>Load Submissions</button>
         <button onClick={downloadPDF}>Generate ID Cards</button>
         <button onClick={exportToExcel}>Export to Excel</button>
+
         <table
           className="table"
           border={1}
@@ -126,9 +181,7 @@ export default function AdminSubmissions() {
             {students.map((s) => (
               <tr key={s.id}>
                 <td>{s.full_name}</td>
-                <td>
-                  {getClassName(s.classroom)}
-                </td>
+                <td>{getClassName(s.classroom)}</td>
                 <td>{s.parent_phone}</td>
                 <td>{s.status}</td>
               </tr>

@@ -3,5 +3,5 @@ SUPER_ADMIN:
     Super1@user
 
 SCHOOL_ADMIN
-    "sch_admin"
+    "nhs_admin"
     "Change@123"

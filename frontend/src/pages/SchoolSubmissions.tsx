@@ -5,7 +5,7 @@ import { api } from "../api"
 type Student = {
   id: number
   full_name?: string
-  father_name?: string
+  fatherName?: string
   parent_phone?: string
   parent_email?: string
   status: "SUBMITTED" | "VERIFIED" | "APPROVED"
@@ -84,7 +84,7 @@ export default function SchoolSubmissions() {
                 <tr key={s.id}>
                   <td>{s.id}</td>
                   <td>{s.full_name || s.meta?.student_name || "-"}
-                    {s.meta?.father_name ? ` (Father: ${s.meta.father_name})` : ""}
+                    {s.meta?.fatherName ? ` (Father: ${s.meta.fatherName})` : ""}
                   </td>
                   <td>{classLabel(s.classroom)}</td>
                   <td>{s.status}</td>
