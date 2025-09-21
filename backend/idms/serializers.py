@@ -143,11 +143,11 @@ class StudentSerializer(serializers.ModelSerializer):
         model = Student
         fields = [
             "id", "school", "classroom",
-            "full_name", "father_name", "dob", "gender",
+            "full_name", "fatherName", "dob", "gender",
             "photo",
             "parent_email", "parent_phone",
             "status",          # <-- include this
-            "meta",            # <-- include this (so father_name shows in UI under meta)
+            "meta",            # <-- include this (so fatherName shows in UI under meta)
             "submitted", "created_at"
         ]
         read_only_fields = ["submitted", "created_at"]

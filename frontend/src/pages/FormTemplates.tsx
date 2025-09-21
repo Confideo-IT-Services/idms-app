@@ -49,11 +49,11 @@ export default function FormTemplates() {
       //   { name: "full_name", label: "Student Name", type: "text", required: true },
       //   { name: "parent_phone", label: "Parent Phone", type: "tel", required: true },
       //   { name: "photo", label: "Photo", type: "file", required: true },
-      //   { name: "father_name", label: "Father Name", type: "text", required: false }
+      //   { name: "fatherName", label: "Father Name", type: "text", required: false }
       // ],
       fields: [
         {name:"full_name", label:"Student Name",type:"text",required:true, map_to:"full_name"},
-        {name:"father_name",label:"Father Name",type:"text",required:false},
+        {name:"fatherName",label:"Father Name",type:"text",required:false},
         {name:"address",label:"Address",type:"textarea",required:false},
         {name:"blood_group",label:"Blood Group",type:"select",options:["A+","A-","B+","B-","O+","O-","AB+","AB-"],required:false},
         {name:"parent_phone",label:"Parent Phone",type:"tel",required:true, map_to:"parent_phone","unique":true},
