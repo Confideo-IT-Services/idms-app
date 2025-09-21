@@ -31,3 +31,5 @@ urlpatterns = [
     path("api/me/", me),
     path('api/', include('idms.urls')),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
