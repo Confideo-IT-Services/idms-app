@@ -1,4 +1,3 @@
-# backend/idcards/utils.py
 from PIL import Image, ImageDraw, ImageFont
 import io, os, math
 from reportlab.pdfgen import canvas
@@ -50,18 +49,35 @@ def paste_photo_exact(card: Image.Image, photo_path: str, x:int,y:int,w:int,h:in
         return
     img_w, img_h = img.size
     if w <= 0 or h <= 0: return
+    
+    # Calculate aspect ratios
     img_ratio = img_w / img_h
     box_ratio = w / h
+    
+    # Resize to cover the entire box while maintaining aspect ratio
     if img_ratio > box_ratio:
-        new_h = h; new_w = int(round(h * img_ratio))
+        # Image is wider - fit to height, crop width
+        new_h = h
+        new_w = int(round(h * img_ratio))
+        # Center horizontally
+        left = (new_w - w) // 2
+        top = 0
     else:
-        new_w = w; new_h = int(round(w / img_ratio))
+        # Image is taller - fit to width, crop height
+        new_w = w
+        new_h = int(round(w / img_ratio))
+        # Center vertically
+        left = 0
+        top = (new_h - h) // 2
+    
+    # Resize image
     img = img.resize((new_w, new_h), Image.LANCZOS)
-    left = max(0, (new_w - w)//2); top = max(0, (new_h - h)//2)
+    
+    # Crop to exact dimensions from center
     img = img.crop((left, top, left + w, top + h))
-    card.paste(img, (x,y), img if img.mode == "RGBA" else None)
-
-
+    
+    # Paste onto card
+    card.paste(img, (x, y), img if img.mode == "RGBA" else None)
 
 
 def render_card_image(student, template):
