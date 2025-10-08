@@ -2,7 +2,7 @@
 import axios from 'axios'
 
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL:'http://127.0.0.1:8000/api',
 })
 
 export function setAuth(token: string | null) {
@@ -20,7 +20,8 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('refresh')
       if (refresh) {
         try {
-          const r = await axios.post('/api/auth/token/refresh/', { refresh })
+          const r = await axios.post('http://127.0.0.1:8000/api/auth/token/refresh/', { refresh })
+
           const newAccess = r.data.access
           localStorage.setItem('access', newAccess)
           setAuth(newAccess)

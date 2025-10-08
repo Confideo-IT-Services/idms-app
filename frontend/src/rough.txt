@@ -1,0 +1,110 @@
+/* --- Active Menu Highlight with matching theme colors --- */
+.menu-dashboard.active {
+  background: #e0ecff;   /* Blue */
+  color: #2563eb;
+}
+
+.menu-schools.active {
+  background: #e0f7ff;   /* Light Blue */
+  color: #0ea5e9;
+}
+
+.menu-admins.active {
+  background: #e6f9ed;   /* Green */
+  color: #22c55e;
+}
+
+.menu-templates.active {
+  background: #fff7e6;   /* Amber */
+  color: #f59e0b;
+}
+
+.menu-idtemplates.active {
+  background: #f3e8ff;   /* Violet */
+  color: #8b5cf6;
+}
+
+.menu-submissions.active {
+  background: #ffe8e8;   /* Red */
+  color: #ef4444;
+}
+
+/* School Menu */
+.menu-classes.active {
+  background: #e6f9ed;   /* Green */
+  color: #22c55e;
+}
+
+.menu-upload.active {
+  background: #fff7e6;   /* Amber */
+  color: #f59e0b;
+}
+
+/* Make icon color match text for active */
+.sidebar-menu a.active .icon {
+  color: inherit;
+  filter: brightness(1.1);
+}
+
+/* Smooth transition for hover & active states */
+.sidebar-menu a {
+  transition: all 0.2s;
+}
+
+
+
+the above one is for colored active
+
+
+
+
+the below one is an another style of active
+
+/* --- Active Menu Highlight --- */
+.sidebar-menu a.active {
+  background: rgba(0, 0, 0, 0.05); /* subtle background for active */
+  box-shadow: inset 4px 0 0 0 currentColor; /* small colored indicator on left */
+  font-weight: 600;
+}
+
+/* Optional: make icon and text slightly brighter */
+.sidebar-menu a.active .icon {
+  filter: brightness(1.1);
+}
+
+
+
+this is for colored Icons
+
+/* .menu-dashboard .icon,
+.menu-dashboard { color: #2563eb; }       
+.menu-schools .icon,
+.menu-schools { color: #0ea5e9; }         
+.menu-admins .icon,
+.menu-admins { color: #22c55e; }          
+.menu-templates .icon,
+.menu-templates { color: #f59e0b; }       
+.menu-idtemplates .icon,
+.menu-idtemplates { color: #8b5cf6; }     
+.menu-submissions .icon,
+.menu-submissions { color: #ef4444; }     */
+
+/* --- School User Icons & Text --- */
+/* .menu-classes .icon,
+.menu-classes { color: #22c55e; }         
+.menu-upload .icon,
+.menu-upload { color: #f59e0b; }       */
+
+/* --- Hover backgrounds matching theme --- */
+/* .menu-dashboard:hover { background: #e0ecff; }
+.menu-schools:hover { background: #e0f7ff; }
+.menu-admins:hover { background: #e6f9ed; }
+.menu-templates:hover { background: #fff7e6; }
+.menu-idtemplates:hover { background: #f3e8ff; }
+.menu-submissions:hover { background: #ffe8e8; } */
+
+/* .menu-classes:hover { background: #e6f9ed; }
+.menu-upload:hover { background: #fff7e6; } */
+
+
+
