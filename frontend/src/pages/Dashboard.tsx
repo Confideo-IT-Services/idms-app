@@ -1,43 +1,89 @@
-import React, { useEffect, useState } from "react"
-import { api } from "../api"
-import { useNavigate } from "react-router-dom"
+import React, { useEffect, useState, useRef } from "react";
+import { api } from "../api";
+import { useNavigate } from "react-router-dom";
+import {
+  FaSchool,
+  FaUserGraduate,
+  FaIdCard,
+  FaClock,
+  FaUserCircle,
+} from "react-icons/fa";
+import "../sidebar.css";
 
 export default function Dashboard() {
-  const [data, setData] = useState<any>(null)
-  const nav = useNavigate()
+  const [data, setData] = useState<any>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const nav = useNavigate();
 
   useEffect(() => {
-    api.get("/dashboard/").then(res => setData(res.data)).catch(err => console.error(err))
-  }, [])
+    api
+      .get("/dashboard/")
+      .then((res) => setData(res.data))
+      .catch((err) => console.error(err));
+  }, []);
 
-  if (!data) return <div className="app-container card">Loading...</div>
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  if (!data) return <div className="app-container card">Loading...</div>;
+
+  const logout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    location.replace("/login");
+  };
 
   return (
-    <div className="app-container">
-      <div className="card">
-        <h2>Admin Dashboard</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginTop: 12 }}>
-          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/schools")}>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{data.schools}</div>
-            <div className="helper">Schools</div>
+  
+      <div className="dashboard-content">
+        <div className="dashboard-line"></div>
+        <h2 className="dashboard-title">Admin Dashboard</h2>
+
+        <div className="dashboard-cards">
+          <div
+            className="info-card schools"
+            onClick={() => nav("/admin/schools")}
+          >
+            <FaSchool className="card-icon" />
+            <p className="card-label">Schools</p>
+            <h3 className="card-value">{data.schools}</h3>
           </div>
 
-          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/submissions")}>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{data.students}</div>
-            <div className="helper">Total Students</div>
+          <div
+            className="info-card students"
+            onClick={() => nav("/admin/submissions")}
+          >
+            <FaUserGraduate className="card-icon" />
+            <p className="card-label">Total Students</p>
+            <h3 className="card-value">{data.students}</h3>
           </div>
 
-          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/submissions")}>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{data.id_generated}</div>
-            <div className="helper">ID Cards Generated</div>
+          <div
+            className="info-card generated"
+            onClick={() => nav("/admin/submissions")}
+          >
+            <FaIdCard className="card-icon" />
+            <p className="card-label">ID Cards Generated</p>
+            <h3 className="card-value">{data.id_generated}</h3>
           </div>
 
-          <div className="card" style={{ textAlign: "center", cursor: "pointer" }} onClick={() => nav("/admin/submissions")}>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{data.id_pending}</div>
-            <div className="helper">ID Cards Pending</div>
+          <div
+            className="info-card pending"
+            onClick={() => nav("/admin/submissions")}
+          >
+            <FaClock className="card-icon" />
+            <p className="card-label">ID Cards Pending</p>
+            <h3 className="card-value">{data.id_pending}</h3>
           </div>
         </div>
       </div>
-    </div>
-  )
+  );
 }
