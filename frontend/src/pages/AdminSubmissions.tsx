@@ -1,4 +1,3 @@
-// AdminSubmissions.tsx
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import * as XLSX from "xlsx";
@@ -12,18 +11,13 @@ export default function AdminSubmissions() {
 
   useEffect(() => {
     api.get("/schools/").then((res) => setSchools(res.data));
-    // ensure classes cleared on mount
     setClasses([]);
   }, []);
 
-  // Robust loader: normalizes response and client-side filters classes by schoolId
   async function loadClasses(sid: number) {
     try {
       const { data } = await api.get(`/classes/?school=${sid}`);
       const list = data.results ?? data ?? [];
-
-      // Filter classes so only those that belong to the selected school are kept.
-      // Support various shapes: c.school (number), c.school.id (object), c.school_id
       const filtered = (list || []).filter((c: any) => {
         const sMatch =
           c.school === sid ||
@@ -31,11 +25,10 @@ export default function AdminSubmissions() {
           c.school_id === sid;
         return sMatch;
       });
-
       setClasses(filtered);
     } catch (err) {
       console.error("Failed loading classes", err);
-      setClasses([]); // safe fallback
+      setClasses([]);
     }
   }
 
@@ -48,9 +41,7 @@ export default function AdminSubmissions() {
     const { data } = await api.get(
       `/students/submissions/?school=${schoolId}&classroom=${classId}`
     );
-
     const list = data.results ?? data ?? [];
-
     const filtered = (list || []).filter((s: any) => {
       const schoolMatch =
         s.school === schoolId ||
@@ -63,7 +54,6 @@ export default function AdminSubmissions() {
           : s.classroom && (s.classroom.id ?? s.classroom.pk ?? null);
 
       const classMatch = classroomId === classId;
-
       return schoolMatch && classMatch;
     });
 
@@ -121,24 +111,45 @@ export default function AdminSubmissions() {
   }
 
   return (
-    <div className="app-container">
-      <div className="card">
-        <h2>Admin Submissions</h2>
+    <div style={{ padding: 20, paddingLeft: 0, paddingRight: 0 }}>
+      {/* Full-width top line */}
+      <div
+        style={{
+          height: 2,
+          width: "100%",
+          backgroundColor: "#2c7be5",
+          marginTop: 30,
+          borderRadius: 2,
+        }}
+      ></div>
 
+      {/* Header */}
+      <h2
+        style={{
+          margin: 0,
+          marginTop: 45,
+          marginBottom: 20,
+          color: "#2c7be5",
+          fontSize: "26px",
+          fontWeight: "bold",
+        }}
+      >
+        Admin Submissions
+      </h2>
+
+      {/* Filters */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <select
           value={schoolId ?? ""}
           onChange={(e) => {
             const sid = Number(e.target.value) || null;
             setSchoolId(sid);
-            // Clear previous class & students to avoid stale selections
             setClassId(null);
             setStudents([]);
             setClasses([]);
-
-            if (sid) {
-              loadClasses(sid);
-            }
+            if (sid) loadClasses(sid);
           }}
+          style={inputStyle}
         >
           <option value="">Select School</option>
           {schools.map((s) => (
@@ -151,6 +162,7 @@ export default function AdminSubmissions() {
         <select
           value={classId ?? ""}
           onChange={(e) => setClassId(Number(e.target.value))}
+          style={inputStyle}
         >
           <option value="">Select Class</option>
           {classes.map((c) => (
@@ -160,35 +172,82 @@ export default function AdminSubmissions() {
           ))}
         </select>
 
-        <button onClick={loadSubmissions}>Load Submissions</button>
-        <button onClick={downloadPDF}>Generate ID Cards</button>
-        <button onClick={exportToExcel}>Export to Excel</button>
+        <button style={buttonStyle} onClick={loadSubmissions}>
+          Load Submissions
+        </button>
+        <button style={buttonStyle} onClick={downloadPDF}>
+          Generate ID Cards
+        </button>
+        <button style={buttonStyle} onClick={exportToExcel}>
+          Export to Excel
+        </button>
+      </div>
 
-        <table
-          className="table"
-          border={1}
-          style={{ marginTop: 20, width: "100%" }}
-        >
+      {/* Table */}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
           <thead>
-            <tr>
-              <th>Name</th>
-              <th>Class</th>
-              <th>Phone</th>
-              <th>Status</th>
+            <tr style={{ backgroundColor: "#f1f1f1", textAlign: "left" }}>
+              {["Name", "Class", "Phone", "Status"].map((h) => (
+                <th key={h} style={{ padding: "10px 8px" }}>
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {students.map((s) => (
-              <tr key={s.id}>
-                <td>{s.full_name}</td>
-                <td>{getClassName(s.classroom)}</td>
-                <td>{s.parent_phone}</td>
-                <td>{s.status}</td>
+            {students.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center", padding: "24px", color: "#777" }}>
+                  No submissions found
+                </td>
               </tr>
-            ))}
+            ) : (
+              students.map((s) => (
+                <tr
+                  key={s.id}
+                  style={{
+                    borderBottom: "1px solid #eee",
+                    cursor: "default",
+                    transition: "background 0.2s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fafafa")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <td style={tdStyle}>{s.full_name}</td>
+                  <td style={tdStyle}>{getClassName(s.classroom)}</td>
+                  <td style={tdStyle}>{s.parent_phone}</td>
+                  <td style={tdStyle}>{s.status}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  padding: "8px 10px",
+  borderRadius: 6,
+  border: "1px solid #ccc",
+  fontSize: 15,
+  outline: "none",
+  minWidth: 160,
+};
+
+const buttonStyle: React.CSSProperties = {
+  padding: "8px 16px",
+  borderRadius: 6,
+  border: "none",
+  backgroundColor: "#2c7be5",
+  color: "#fff",
+  cursor: "pointer",
+  fontWeight: 500,
+  transition: "all 0.2s",
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "10px 8px",
+};

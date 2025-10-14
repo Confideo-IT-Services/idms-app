@@ -85,7 +85,7 @@ export default function AdminUsers() {
       {/* Full-width top line */}
       <div
         style={{
-          height: 3,
+          height: 2,
           width: "100%",
           backgroundColor: "#2c7be5",
           marginTop: 30,

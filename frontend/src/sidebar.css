@@ -77,7 +77,7 @@
 /* ----------------- Dashboard ----------------- */
 
 .dashboard-line {
-  height: 3px;
+  height: 2px;
   width: calc(100%);
   background: linear-gradient(to right, #2563eb, #7ba7fd);
   margin-top: 50px;

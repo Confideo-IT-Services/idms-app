@@ -77,7 +77,7 @@ export default function AuthedLayout() {
                 <FaUserTie />
                 {expanded && <span>School Admins</span>}
               </NavLink>
-              <NavLink to="/school/upload-links">
+              <NavLink to="/templates">
                 <FaListUl />
                 {expanded && <span>Templates</span>}
               </NavLink>
@@ -151,7 +151,7 @@ export default function AuthedLayout() {
                 marginTop: 8,
                 width: 200,
                 background: "#fff",
-                border: "1px solid #ddd",
+                
                 borderRadius: 8,
                 boxShadow: "0 6px 12px rgba(0,0,0,0.15)",
                 overflow: "hidden",

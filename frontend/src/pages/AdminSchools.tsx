@@ -59,7 +59,7 @@ export default function AdminSchools() {
   return (
     <div style={{ padding: 20, paddingLeft:0, paddingRight:0 }}>
       {/* Full-width top line */}
-      <div style={{ height: 3, width: "100%", backgroundColor: "#2c7be5", marginTop: 30, borderRadius: 2 }}></div>
+      <div style={{ height: 2, width: "100%", backgroundColor: "#2c7be5", marginTop: 30, borderRadius: 2 }}></div>
 
       {/* Header + New School button */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
