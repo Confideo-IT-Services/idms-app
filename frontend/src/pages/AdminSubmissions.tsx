@@ -60,7 +60,7 @@ export default function AdminSubmissions() {
     setStudents(filtered);
   }
 
-  async function downloadPDF() {
+    async function downloadPDF() {
     if (!schoolId || !classId) return;
     if (
       !window.confirm(
@@ -69,20 +69,44 @@ export default function AdminSubmissions() {
     )
       return;
 
-    const res = await api.get(
-      `/students/generate_ids/?school=${schoolId}&classroom=${classId}`,
-      {
-        responseType: "blob",
+    try {
+      // 1️⃣ Generate and download PDF
+      const res = await api.get(
+        `/students/generate_ids/?school=${schoolId}&classroom=${classId}`,
+        { responseType: "blob" }
+      );
+
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "idcards.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // 2️⃣ Mark each verified student as ID_GENERATED
+      const verified = students.filter((s) => s.status === "VERIFIED");
+      if (verified.length) {
+        for (const stu of verified) {
+          try {
+            await api.post(`/students/${stu.id}/mark-id-generated/`);
+          } catch (err) {
+            console.warn(`Failed to update status for student ${stu.id}`, err);
+          }
+        }
+        alert("All verified students have been marked as ID_GENERATED.");
+      } else {
+        alert("No verified students found to mark as ID_GENERATED.");
       }
-    );
-    const url = URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "idcards.pdf");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+
+      // 3️⃣ Reload list to reflect updated status
+      await loadSubmissions();
+    } catch (err) {
+      console.error("Failed to generate or update status:", err);
+      alert("Failed to generate ID cards or update student status.");
+    }
   }
+
 
   function getClassName(idOrObj: number | any) {
     if (!idOrObj) return "";
@@ -199,7 +223,7 @@ export default function AdminSubmissions() {
             {students.length === 0 ? (
               <tr>
                 <td colSpan={4} style={{ textAlign: "center", padding: "24px", color: "#777" }}>
-                  No submissions found
+                  No submissions found/ID Cards Generated
                 </td>
               </tr>
             ) : (

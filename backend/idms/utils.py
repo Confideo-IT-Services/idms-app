@@ -64,6 +64,150 @@ def paste_photo_exact(card: Image.Image, photo_path: str, x:int,y:int,w:int,h:in
 
 
 
+# def render_card_image(student, template):
+#     """Render card image at template background's native pixel size using template.fields (image-pixel coords)."""
+#     bg_path = template.background.path
+#     background = Image.open(bg_path).convert("RGBA")
+#     draw = ImageDraw.Draw(background)
+#     fields = template.fields or {}
+
+#     def _normalize_key_variants(key: str):
+#         variants = [key, key.lower(), key.replace(" ", "_"), key.replace(" ", "_").lower()]
+#         return list(dict.fromkeys(variants))  # unique, preserve order
+
+#     def _get_meta_dict(s):
+#         meta = None
+        
+#         if isinstance(s, dict):
+#             # try common meta keys
+#             meta = s.get("meta") or s.get("metadata") or s.get("Meta")
+#         else:
+#             meta = getattr(s, "meta", None)
+#         if isinstance(meta, str):
+#             try:
+#                 meta_parsed = json.loads(meta)
+#                 if isinstance(meta_parsed, dict):
+#                     return meta_parsed
+#             except Exception:
+#                 return {}
+#         if isinstance(meta, dict):
+#             return meta
+#         return {}
+
+#     def _get_from_obj_or_dict(s, key):
+#         """Try to resolve `key` from object attributes and dict keys, and return None if not found."""
+#         # 1) direct attribute (for model instances)
+#         if not isinstance(s, dict):
+#             if hasattr(s, key):
+#                 return getattr(s, key)
+#             # try lowercase attr
+#             lower = key.lower()
+#             if hasattr(s, lower):
+#                 return getattr(s, lower)
+#             snake = key.replace(" ", "_").lower()
+#             if hasattr(s, snake):
+#                 return getattr(s, snake)
+
+#         # 2) dict access
+#         if isinstance(s, dict):
+#             # try key variations
+#             for k in _normalize_key_variants(key):
+#                 if k in s:
+#                     return s[k]
+
+#         return None
+
+#     def get_student_value(s, field_name):
+#         # support nested lookup like "parent.fatherName"
+#         if "." in field_name:
+#             parts = field_name.split(".")
+#             cur = s
+#             for p in parts:
+#                 cur = _get_from_obj_or_dict(cur, p)
+#                 if cur is None:
+#                     # if not found in top-level, try meta on the original student for nested full key
+#                     break
+#             if cur is not None:
+#                 return cur
+
+#         # try direct attribute/key
+#         val = _get_from_obj_or_dict(s, field_name)
+#         if val is not None:
+#             return val
+
+#         # try meta dict
+#         #import ipdb; ipdb.set_trace()
+#         meta = _get_meta_dict(s)
+#         if meta:
+#             for k in _normalize_key_variants(field_name):
+#                 if k in meta:
+#                     return meta[k]
+
+#         # fallback: try other common names: remove non-alphanumeric and try
+#         fallback_key = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in field_name).lower()
+#         if meta and fallback_key in meta:
+#             return meta[fallback_key]
+
+#         return None
+
+#     # deterministic order
+#     for field_name in fields.keys():
+#         cfg = fields[field_name] or {}
+#         x = int(round(cfg.get("x", 0))); y = int(round(cfg.get("y", 0)))
+#         w = int(round(cfg.get("width", cfg.get("w", 0))))
+#         h = int(round(cfg.get("height", cfg.get("h", 0))))
+
+#         if cfg.get("isImage") or field_name.lower() == "photo":
+#             photo_attr = get_student_value(student, "photo")
+#             photo_path = None
+#             if photo_attr is None:
+#                 # also try 'photo_path' or 'photo_url'
+#                 photo_attr = get_student_value(student, "photo_path") or get_student_value(student, "photo_url")
+
+#             # handle different photo shapes: Django FileField, dict, plain string
+#             try:
+#                 if photo_attr is None:
+#                     pass
+#                 elif hasattr(photo_attr, "path"):
+#                     photo_path = photo_attr.path
+#                 elif isinstance(photo_attr, dict):
+#                     # common nested shapes
+#                     photo_path = photo_attr.get("path") or photo_attr.get("url") or photo_attr.get("file")
+#                 elif isinstance(photo_attr, str):
+#                     photo_path = photo_attr
+#                 elif hasattr(photo_attr, "url"):
+#                     # File-like with url
+#                     photo_path = getattr(photo_attr, "url")
+#             except Exception:
+#                 photo_path = None
+
+#             if photo_path:
+#                 try:
+#                     paste_photo_exact(background, photo_path, x, y, w, h)
+#                 except Exception:
+#                     # ignore photo paste errors (keeps other fields rendering)
+#                     pass
+#             continue
+
+#         # fetch text (attribute then meta)
+#         value = get_student_value(student, field_name)
+#         # debug print left intentionally — remove or change to logging as needed
+#         print(field_name, value)
+#         if value is None:
+#             continue
+#         text = str(value)
+#         font_name = cfg.get("font", "arial.ttf")
+#         font_size = int(round(cfg.get("size", max(10, (h//2 if h else 14)))))
+#         font = load_font(font_name, font_size)
+#         color = cfg.get("color", "#000000")
+#         try:
+#             draw.text((x, y), text, fill=color, font=font)
+#         except Exception:
+#             draw.text((x, y), text, fill=color)
+
+#     return background.convert("RGB")
+
+
 def render_card_image(student, template):
     """Render card image at template background's native pixel size using template.fields (image-pixel coords)."""
     bg_path = template.background.path
@@ -77,9 +221,7 @@ def render_card_image(student, template):
 
     def _get_meta_dict(s):
         meta = None
-        
         if isinstance(s, dict):
-            # try common meta keys
             meta = s.get("meta") or s.get("metadata") or s.get("Meta")
         else:
             meta = getattr(s, "meta", None)
@@ -95,55 +237,42 @@ def render_card_image(student, template):
         return {}
 
     def _get_from_obj_or_dict(s, key):
-        """Try to resolve `key` from object attributes and dict keys, and return None if not found."""
-        # 1) direct attribute (for model instances)
         if not isinstance(s, dict):
             if hasattr(s, key):
                 return getattr(s, key)
-            # try lowercase attr
             lower = key.lower()
             if hasattr(s, lower):
                 return getattr(s, lower)
             snake = key.replace(" ", "_").lower()
             if hasattr(s, snake):
                 return getattr(s, snake)
-
-        # 2) dict access
         if isinstance(s, dict):
-            # try key variations
             for k in _normalize_key_variants(key):
                 if k in s:
                     return s[k]
-
         return None
 
     def get_student_value(s, field_name):
-        # support nested lookup like "parent.fatherName"
         if "." in field_name:
             parts = field_name.split(".")
             cur = s
             for p in parts:
                 cur = _get_from_obj_or_dict(cur, p)
                 if cur is None:
-                    # if not found in top-level, try meta on the original student for nested full key
                     break
             if cur is not None:
                 return cur
 
-        # try direct attribute/key
         val = _get_from_obj_or_dict(s, field_name)
         if val is not None:
             return val
 
-        # try meta dict
-        #import ipdb; ipdb.set_trace()
         meta = _get_meta_dict(s)
         if meta:
             for k in _normalize_key_variants(field_name):
                 if k in meta:
                     return meta[k]
 
-        # fallback: try other common names: remove non-alphanumeric and try
         fallback_key = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in field_name).lower()
         if meta and fallback_key in meta:
             return meta[fallback_key]
@@ -153,30 +282,28 @@ def render_card_image(student, template):
     # deterministic order
     for field_name in fields.keys():
         cfg = fields[field_name] or {}
-        x = int(round(cfg.get("x", 0))); y = int(round(cfg.get("y", 0)))
+        x = int(round(cfg.get("x", 0)))
+        y = int(round(cfg.get("y", 0)))
         w = int(round(cfg.get("width", cfg.get("w", 0))))
         h = int(round(cfg.get("height", cfg.get("h", 0))))
 
+        # --- handle photo fields ---
         if cfg.get("isImage") or field_name.lower() == "photo":
             photo_attr = get_student_value(student, "photo")
             photo_path = None
             if photo_attr is None:
-                # also try 'photo_path' or 'photo_url'
                 photo_attr = get_student_value(student, "photo_path") or get_student_value(student, "photo_url")
 
-            # handle different photo shapes: Django FileField, dict, plain string
             try:
                 if photo_attr is None:
                     pass
                 elif hasattr(photo_attr, "path"):
                     photo_path = photo_attr.path
                 elif isinstance(photo_attr, dict):
-                    # common nested shapes
                     photo_path = photo_attr.get("path") or photo_attr.get("url") or photo_attr.get("file")
                 elif isinstance(photo_attr, str):
                     photo_path = photo_attr
                 elif hasattr(photo_attr, "url"):
-                    # File-like with url
                     photo_path = getattr(photo_attr, "url")
             except Exception:
                 photo_path = None
@@ -185,27 +312,55 @@ def render_card_image(student, template):
                 try:
                     paste_photo_exact(background, photo_path, x, y, w, h)
                 except Exception:
-                    # ignore photo paste errors (keeps other fields rendering)
                     pass
             continue
 
-        # fetch text (attribute then meta)
+        # --- handle text fields ---
         value = get_student_value(student, field_name)
-        # debug print left intentionally — remove or change to logging as needed
         print(field_name, value)
         if value is None:
             continue
+
         text = str(value)
         font_name = cfg.get("font", "arial.ttf")
-        font_size = int(round(cfg.get("size", max(10, (h//2 if h else 14)))))
+        font_size = int(round(cfg.get("size", max(10, (h // 2 if h else 14)))))
         font = load_font(font_name, font_size)
         color = cfg.get("color", "#000000")
-        try:
-            draw.text((x, y), text, fill=color, font=font)
-        except Exception:
-            draw.text((x, y), text, fill=color)
+
+        # ---------- NEW: WORD WRAPPING ----------
+        max_width = w if w > 0 else background.width
+        lines = []
+        words = text.split()
+        current = ""
+        for word in words:
+            test_line = (current + " " + word).strip()
+            tw, th = draw.textbbox((0, 0), test_line, font=font)[2:]
+            if tw <= max_width:
+                current = test_line
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+
+        line_height = draw.textbbox((0, 0), "Ag", font=font)[3] - draw.textbbox((0, 0), "Ag", font=font)[1]
+        total_text_height = len(lines) * line_height
+
+        # vertical centering
+        start_y = y
+        if total_text_height < h:
+            start_y = y + (h - total_text_height) // 2
+
+        # draw each line centered horizontally
+        for i, line in enumerate(lines):
+            tw, _ = draw.textbbox((0, 0), line, font=font)[2:]
+            line_x = x + max(0, (max_width - tw) // 2)
+            draw.text((line_x, start_y + i * line_height), line, fill=color, font=font)
+    # ---------------------------------------------
 
     return background.convert("RGB")
+
 
 def compute_grid(paper_w_pt, paper_h_pt, card_w_pt, card_h_pt, margin_pt=18, spacing_pt=8):
     """

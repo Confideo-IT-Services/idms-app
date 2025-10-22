@@ -1,6 +1,49 @@
-**/__pycache__/
-**/*.py3venv
-py3venv
-**/package*.json
-backend/media/*
+# **/__pycache__/
+# **/*.py3venv
+# py3venv
+# **/package*.json
+# backend/media/photos/*
+# backend/media/id_templates/backgrounds/*
+# backend/idms/migrations/*
+# .env
+# --- Python / Django ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py3venv
+*.venv
+venv/
+env/
+*.log
+
+# --- Django media & migrations ---
+backend/media/photos/*
+backend/media/id_templates/backgrounds/*
 backend/idms/migrations/*
+!backend/idms/migrations/__init__.py  # keep init file so Django recognizes package
+
+# --- Node / React ---
+node_modules/
+build/
+dist/
+*.log
+
+# --- Environment files ---
+.env
+.env.local
+.env.development
+.env.production
+
+# --- Package files ---
+# Keep package.json and package-lock.json; they’re required for dependencies
+# (so don’t ignore them)
+
+# --- OS / Editor files ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Python virtual environment ---
+py3venv

@@ -177,3 +177,50 @@ class IdCardTemplateSerializer(serializers.ModelSerializer):
             except Exception:
                 return obj.background.url
         return None
+    
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Accepts a few common payload shapes used by dj-rest-auth / djoser / custom endpoints:
+      - { old_password, new_password1, new_password2 }
+      - { current_password, new_password1, new_password2 }
+      - { old_password, new_password }
+      - { current_password, new_password }
+    The serializer normalizes and validates inputs and exposes validated_data['_old'] and ['_new'].
+    """
+    old_password = serializers.CharField(required=False, write_only=True)
+    current_password = serializers.CharField(required=False, write_only=True)
+
+    new_password1 = serializers.CharField(required=False, write_only=True)
+    new_password2 = serializers.CharField(required=False, write_only=True)
+    new_password = serializers.CharField(required=False, write_only=True)
+
+    def validate(self, attrs):
+        # choose old
+        old = attrs.get("old_password") or attrs.get("current_password")
+        if not old:
+            raise serializers.ValidationError({"old_password": ["Current password is required."]})
+
+        # choose new
+        # prefer new_password1/new_password2 pattern
+        new = None
+        if "new_password1" in attrs or "new_password2" in attrs:
+            np1 = attrs.get("new_password1")
+            np2 = attrs.get("new_password2")
+            if not np1 or not np2:
+                raise serializers.ValidationError({"new_password": ["Both new_password1 and new_password2 are required."]})
+            if np1 != np2:
+                raise serializers.ValidationError({"new_password": ["New passwords do not match."]})
+            new = np1
+        else:
+            new = attrs.get("new_password")
+
+        if not new:
+            raise serializers.ValidationError({"new_password": ["New password is required."]})
+
+        # minimal length — adjust to your policy
+        if len(new) < 6:
+            raise serializers.ValidationError({"new_password": ["Password must be at least 6 characters."]})
+
+        attrs["_old"] = old
+        attrs["_new"] = new
+        return attrs
