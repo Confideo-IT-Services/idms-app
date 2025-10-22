@@ -1,4 +1,11 @@
 # idcards/views_admin.py
+
+
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+# import the serializer you just added
+from .serializers import ChangePasswordSerializer
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -17,6 +24,8 @@ from django.template import Template, Context
 from xhtml2pdf import pisa
 import io
 from .utils import generate_id_cards
+
+from .serializers import ChangePasswordSerializer
 
 
 class SchoolViewSet(viewsets.ModelViewSet):
@@ -38,6 +47,35 @@ class UserViewSet(viewsets.ModelViewSet):
         user.set_password(new_pwd)
         user.save()
         return Response({"status": "ok"})
+class ChangePasswordView(APIView):
+    """
+    Authenticated endpoint for users to change their own password.
+    Accepts multiple common payload shapes and returns JSON errors/messages.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        old = serializer.validated_data.get("_old")
+        new = serializer.validated_data.get("_new")
+        user = request.user
+
+        # verify current password
+        if not user.check_password(old):
+            return Response({"old_password": ["Current password is incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # optional: validate against Django's password validators (AUTH_PASSWORD_VALIDATORS)
+        try:
+            validate_password(new, user=user)
+        except DjangoValidationError as e:
+            return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new)
+        user.save()
+        return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
 
 # School Admin scoped resources
 class ClassRoomViewSet(viewsets.ModelViewSet):
@@ -379,16 +417,16 @@ class IdCardTemplateViewSet(viewsets.ModelViewSet):
 
 class DashboardViewSet(APIView):
     permission_classes = [IsAuthenticated]
-
+ 
     def get(self, request, format=None):
         user = request.user
-        # SUPER_ADMIN: global counts
+       
+        # SUPERADMIN: global counts_
         if getattr(user, "role", "") == "SUPER_ADMIN":
             total_schools = School.objects.count()
-            total_students = Student.objects.count()
+            total_students = Student.objects.filter(status__in=["VERIFIED", "ID_GENERATED"]).count()
             id_generated = Student.objects.filter(status="ID_GENERATED").count()
-            id_pending = Student.objects.filter(~Q(status="ID_GENERATED")).count()
-            # optionally count templates & links
+            id_pending = Student.objects.filter(status="VERIFIED").count()
             total_templates = IdCardTemplate.objects.count()
             total_upload_links = UploadLink.objects.count()
             return Response({
@@ -400,21 +438,45 @@ class DashboardViewSet(APIView):
                 "templates": total_templates,
                 "upload_links": total_upload_links,
             })
-
-        # SCHOOL_ADMIN: scoped to the admin's school
+ 
+        # SCHOOLADMIN: scoped to the admin's school_
         elif getattr(user, "role", "") == "SCHOOL_ADMIN":
             if not user.school_id:
                 return Response({"detail": "School admin has no school assigned."}, status=400)
+           
             school_id = user.school_id
+           
+            # Total students in the school
             total_students = Student.objects.filter(school_id=school_id).count()
-            parents_submitted = Student.objects.filter(school_id=school_id).exclude(status="PENDING").count()
-            id_generated = Student.objects.filter(school_id=school_id, status="ID_GENERATED").count()
-            id_pending = Student.objects.filter(school_id=school_id).exclude(status="ID_GENERATED").count()
-            # class-wise pending counts
-            class_counts = Student.objects.filter(school_id=school_id).values('classroom_id', 'classroom').annotate(
+           
+            # Parents submitted = students who have submitted (not PENDING/SUBMITTED status)
+            parents_submitted = Student.objects.filter(
+                school_id=school_id
+            ).exclude(status__in=["PENDING", "SUBMITTED"]).count()
+           
+            # ID cards generated
+            id_generated = Student.objects.filter(
+                school_id=school_id,
+                status="ID_GENERATED"
+            ).count()
+           
+            # FIXED: Pending = Students waiting for school admin verification (status="SUBMITTED")
+            # These are students that parents have submitted but school admin hasn't verified yet
+            id_pending = Student.objects.filter(
+                school_id=school_id,
+                status="SUBMITTED"
+            ).count()
+           
+            # FIXED: Class-wise pending - only SUBMITTED students (waiting for school admin to verify)
+            class_counts = Student.objects.filter(
+                school_id=school_id
+            ).values(
+                'classroom_id'
+            ).annotate(
                 total=Count('id'),
-                pending=Count('id', filter=~Q(status="ID_GENERATED"))
+                pending=Count('id', filter=Q(status="SUBMITTED"))
             )
+           
             return Response({
                 "role": "SCHOOL_ADMIN",
                 "school_id": school_id,
@@ -424,6 +486,7 @@ class DashboardViewSet(APIView):
                 "id_pending": id_pending,
                 "class_counts": list(class_counts)
             })
-
+ 
         else:
             return Response({"detail": "Unsupported role."}, status=403)
+        

@@ -66,7 +66,18 @@ export default function Dashboard() {
             <h3 className="card-value">{data.students}</h3>
           </div>
 
-          <div
+
+          
+             <div
+            className="info-card pending"
+            onClick={() => nav("/admin/submissions")}
+          >
+            <FaClock className="card-icon" />
+            <p className="card-label">ID Cards Pending</p>
+            <h3 className="card-value">{data.id_pending}</h3>
+          </div>
+
+           <div
             className="info-card generated"
             onClick={() => nav("/admin/submissions")}
           >
@@ -75,14 +86,7 @@ export default function Dashboard() {
             <h3 className="card-value">{data.id_generated}</h3>
           </div>
 
-          <div
-            className="info-card pending"
-            onClick={() => nav("/admin/submissions")}
-          >
-            <FaClock className="card-icon" />
-            <p className="card-label">ID Cards Pending</p>
-            <h3 className="card-value">{data.id_pending}</h3>
-          </div>
+          
         </div>
       </div>
   );

@@ -111,32 +111,68 @@ export default function AdminIdTemplates() {
         const natH = img.naturalHeight
         setBgNaturalW(natW)
         setBgNaturalH(natH)
-        const scale = Math.min(previewWidth / natW, previewHeight / natH)
-        const fields = tpl.fields ?? {}
-        const elems: Element[] = Object.keys(fields).map((k, i) => {
-          const cfg = fields[k]
-          const imageX = Number(cfg.x ?? 0),
-            imageY = Number(cfg.y ?? 0)
-          const imageW = Number(cfg.width ?? cfg.w ?? 100),
-            imageH = Number(cfg.height ?? cfg.h ?? 30)
-          const px = Math.round(imageX * scale),
-            py = Math.round(imageY * scale)
-          const pw = Math.round(imageW * scale),
-            ph = Math.round(imageH * scale)
-          return {
-            id: Date.now() + i,
-            name: k,
-            x: px,
-            y: py,
-            width: pw,
-            height: ph,
-            font: cfg.font ?? "arial.ttf",
-            size: cfg.size ?? Math.round(ph * 0.45),
-            color: cfg.color ?? "#000000",
-            isImage: !!cfg.isImage || k === "photo",
-          }
-        })
-        setElements(elems)
+        // const scale = Math.min(previewWidth / natW, previewHeight / natH)
+        // const fields = tpl.fields ?? {}
+        // const elems: Element[] = Object.keys(fields).map((k, i) => {
+        //   const cfg = fields[k]
+        //   const imageX = Number(cfg.x ?? 0),
+        //     imageY = Number(cfg.y ?? 0)
+        //   const imageW = Number(cfg.width ?? cfg.w ?? 100),
+        //     imageH = Number(cfg.height ?? cfg.h ?? 30)
+        //   const px = Math.round(imageX * scale),
+        //     py = Math.round(imageY * scale)
+        //   const pw = Math.round(imageW * scale),
+        //     ph = Math.round(imageH * scale)
+        //   return {
+        //     id: Date.now() + i,
+        //     name: k,
+        //     x: px,
+        //     y: py,
+        //     width: pw,
+        //     height: ph,
+        //     font: cfg.font ?? "arial.ttf",
+        //     size: cfg.size ?? Math.round(ph * 0.45),
+        //     color: cfg.color ?? "#000000",
+        //     isImage: !!cfg.isImage || k === "photo",
+        //   }
+        // })
+        // setElements(elems)
+        // compute scale and offsets (centered contain)
+const scale = Math.min(previewWidth / natW, previewHeight / natH)
+const displayedW = Math.round(natW * scale)
+const displayedH = Math.round(natH * scale)
+const offsetX = Math.round((previewWidth - displayedW) / 2)
+const offsetY = Math.round((previewHeight - displayedH) / 2)
+
+const fields = tpl.fields ?? {}
+const elems: Element[] = Object.keys(fields).map((k, i) => {
+  const cfg = fields[k]
+  const imageX = Number(cfg.x ?? 0),
+    imageY = Number(cfg.y ?? 0)
+  const imageW = Number(cfg.width ?? cfg.w ?? 100),
+    imageH = Number(cfg.height ?? cfg.h ?? 30)
+
+  // convert image pixels -> preview coords (include offset)
+  const px = Math.round(imageX * scale + offsetX)
+  const py = Math.round(imageY * scale + offsetY)
+  const pw = Math.round(imageW * scale)
+  const ph = Math.round(imageH * scale)
+
+  return {
+    id: Date.now() + i,
+    name: k,
+    x: px,
+    y: py,
+    width: pw,
+    height: ph,
+    font: cfg.font ?? "arial.ttf",
+    size: cfg.size ?? Math.round(ph * 0.45),
+    color: cfg.color ?? "#000000",
+    isImage: !!cfg.isImage || k === "photo",
+  }
+})
+setElements(elems)
+
       }
       img.onerror = () => {
         setBgNaturalW(0)
@@ -219,22 +255,56 @@ export default function AdminIdTemplates() {
     if (selectedId === id) setSelectedId(null)
   }
 
+  // function convertPreviewToImageCoords(el: Element) {
+  //   if (!bgNaturalW || !bgNaturalH) {
+  //     return {
+  //       x: Math.round(el.x),
+  //       y: Math.round(el.y),
+  //       width: Math.round(el.width),
+  //       height: Math.round(el.height),
+  //     }
+  //   }
+  //   const scale = Math.min(previewWidth / bgNaturalW, previewHeight / bgNaturalH)
+  //   const imageX = Math.round(el.x / scale),
+  //     imageY = Math.round(el.y / scale)
+  //   const imageW = Math.round(el.width / scale),
+  //     imageH = Math.round(el.height / scale)
+  //   return { x: imageX, y: imageY, width: imageW, height: imageH }
+  // }
+
   function convertPreviewToImageCoords(el: Element) {
-    if (!bgNaturalW || !bgNaturalH) {
-      return {
-        x: Math.round(el.x),
-        y: Math.round(el.y),
-        width: Math.round(el.width),
-        height: Math.round(el.height),
-      }
+  if (!bgNaturalW || !bgNaturalH) {
+    return {
+      x: Math.round(el.x),
+      y: Math.round(el.y),
+      width: Math.round(el.width),
+      height: Math.round(el.height),
     }
-    const scale = Math.min(previewWidth / bgNaturalW, previewHeight / bgNaturalH)
-    const imageX = Math.round(el.x / scale),
-      imageY = Math.round(el.y / scale)
-    const imageW = Math.round(el.width / scale),
-      imageH = Math.round(el.height / scale)
-    return { x: imageX, y: imageY, width: imageW, height: imageH }
   }
+
+  const scale = Math.min(previewWidth / bgNaturalW, previewHeight / bgNaturalH)
+  const displayedW = Math.round(bgNaturalW * scale)
+  const displayedH = Math.round(bgNaturalH * scale)
+  const offsetX = Math.round((previewWidth - displayedW) / 2)
+  const offsetY = Math.round((previewHeight - displayedH) / 2)
+
+  // subtract the offset (where the actual image starts inside the preview),
+  // then divide by scale to get back to image native pixels
+  const imageX = Math.round((el.x - offsetX) / scale)
+  const imageY = Math.round((el.y - offsetY) / scale)
+  const imageW = Math.round(el.width / scale)
+  const imageH = Math.round(el.height / scale)
+
+  // clamp to 0..image dimension to avoid negative coordinates
+  const clamp = (v: number, max: number) => Math.max(0, Math.min(Math.round(v), Math.round(max)))
+  return {
+    x: clamp(imageX, bgNaturalW),
+    y: clamp(imageY, bgNaturalH),
+    width: Math.max(0, Math.min(imageW, bgNaturalW)),
+    height: Math.max(0, Math.min(imageH, bgNaturalH)),
+  }
+}
+
 
   async function saveLayoutToTemplate() {
     setStatusMsg(null)
@@ -366,9 +436,24 @@ export default function AdminIdTemplates() {
           ID Template Designer
         </h2>
 
-        {statusMsg && (
+        {/* {statusMsg && (
           <div style={{ color: "#b00020", marginBottom: 12 }}>{statusMsg}</div>
-        )}
+        )} */}
+        {statusMsg && (
+  <div
+    style={{
+      marginBottom: 12,
+      padding: "8px 12px",
+      borderRadius: 6,
+      color: statusMsg.includes("Failed") ? "#b00020" : "#266b37ff",
+      backgroundColor: statusMsg.includes("Failed") ? "#f8d7da" : "#d4edda",
+      border: statusMsg.includes("Failed") ? "1px solid #f5c6cb" : "1px solid #c3e6cb",
+    }}
+  >
+    {statusMsg}
+  </div>
+)}
+
 
         {/* Top selectors & controls */}
         <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
