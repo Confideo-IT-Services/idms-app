@@ -196,7 +196,7 @@ EMAIL_PORT = 587
 MAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER = "apikey"  # literal word required by SendGrid
-EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
+
 DEFAULT_FROM_EMAIL = "info@confideoit.com"
 FRONTEND_URL = "http://localhost:5173"
 
