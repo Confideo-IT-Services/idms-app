@@ -16,6 +16,8 @@ import AdminIdTemplates from "./pages/AdminIdTemplates"
 import SchoolClasses from './pages/SchoolClasses'
 import SchoolSubmissions from './pages/SchoolSubmissions'
 import SchoolUploadLinks from './pages/AdminLinks'
+import ResetPassword from "./pages/ResetPassword"
+
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { me, loading } = useSession()
@@ -35,6 +37,11 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/login" element={<Login onLogin={() => location.replace('/')} />} />
       <Route path="/u/:token" element={<ParentUpload />} />
+
+      {/* reset password - accept either query or path token */}
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
+
 
       {/* Authed + Role-based menu */}
       <Route path="/" element={<RequireAuth><AuthedLayout /></RequireAuth>}>

@@ -12,6 +12,7 @@ from .views_admin import (
     ChangePasswordView,   # ✅ added here
 )
 from .views import public_submit_student, public_link_info, public_form_schema, test_api
+from .views_admin import PasswordResetRequestView, PasswordResetConfirmView
 
 
 router = DefaultRouter()
@@ -39,4 +40,6 @@ urlpatterns = [
     path("auth/password/change/", ChangePasswordView.as_view(), name="password-change"),
     path("auth/change-password/", ChangePasswordView.as_view(), name="change-password-alt"),
     path("auth/users/set_password/", ChangePasswordView.as_view(), name="users-set-password"),
+    path("auth/password-reset/", PasswordResetRequestView.as_view(), name="password-reset"),
+    path("auth/password-reset-confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
 ]

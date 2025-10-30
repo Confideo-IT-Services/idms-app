@@ -13,6 +13,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
+
+# Base directory
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env
+load_dotenv(BASE_DIR / ".env")
+
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -162,7 +170,18 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Email configuration using SendGrid
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_PORT = 587
+MAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = "apikey"  # literal word required by SendGrid
+EMAIL_HOST_PASSWORD = "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"
+DEFAULT_FROM_EMAIL = "info@confideoit.com"
+FRONTEND_URL = "http://localhost:5173"
+
+
+
+

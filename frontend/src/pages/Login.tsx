@@ -1,7 +1,9 @@
+// frontend/src/Login.tsx
 import './Login.css';
 import { useState } from 'react'
 import { useNavigate } from "react-router-dom"
 import { api, setAuth } from '../api'
+import ResetModal from '../components/ResetModal'  // new import (path relative to src)
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState('')
@@ -9,6 +11,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
   const [loading, setLoading] = useState(false)
   const nav = useNavigate()
   const [err, setErr] = useState<string | null>(null)
+  const [showReset, setShowReset] = useState(false)
 
   async function doLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -42,10 +45,12 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
 
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
             <button className="button" type="submit" disabled={loading}>{loading ? "Signing in..." : "Sign in"}</button>
-            <button type="button" className="button secondary" onClick={() => { setUsername(""); setPassword("") }}>Reset</button>
+            <button type="button" className="button secondary" onClick={() => setShowReset(true)}>Reset</button>
           </div>
         </form>
       </div>
+
+      {showReset && <ResetModal onClose={() => setShowReset(false)} />}
     </div>
   )
 }

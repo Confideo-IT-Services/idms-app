@@ -26,6 +26,94 @@ import io
 from .utils import generate_id_cards
 
 from .serializers import ChangePasswordSerializer
+import secrets
+from datetime import timedelta
+from django.conf import settings
+from django.core.mail import send_mail
+
+RESET_TOKEN_EXPIRY_HOURS = getattr(settings, "PASSWORD_RESET_TOKEN_EXPIRY_HOURS", 1)
+
+# replace your PasswordResetRequestView.post with this version
+class PasswordResetRequestView(APIView):
+    permission_classes = []  # AllowAny
+
+    def post(self, request):
+        from .serializers import PasswordResetRequestSerializer
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].strip().lower()
+
+        generic_response = {"detail": "If an account exists for that email, a reset link has been sent."}
+
+        # find matching users (case-insensitive)
+        users_qs = User.objects.filter(email__iexact=email)
+        if not users_qs.exists():
+            # don't reveal whether account exists
+            return Response(generic_response)
+
+        from .models import PasswordResetToken
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:5173")
+
+        for user in users_qs:
+            # create a unique token per user
+            token = secrets.token_urlsafe(48)
+            expires_at = timezone.now() + timedelta(hours=RESET_TOKEN_EXPIRY_HOURS)
+            PasswordResetToken.objects.create(user=user, token=token, expires_at=expires_at)
+
+            reset_link = f"{frontend_url}/reset-password/{token}"
+            subject = "IDMS — Password reset request"
+            message = f"""Hi {user.get_full_name() or user.username},
+
+We received a request to reset your password for IDMS.
+
+Click the link below to set a new password (the link expires in {RESET_TOKEN_EXPIRY_HOURS} hour(s)):
+
+{reset_link}
+
+If you didn't request a password reset, you can safely ignore this email.
+
+Thanks,
+ConfideoIT Services
+"""
+            try:
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+            except Exception as e:
+                # still continue; log exception for debugging
+                print("Failed sending password reset email for user id", user.id, ":", e)
+
+        return Response(generic_response)
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = []
+    def post(self, request):
+        from .serializers import PasswordResetConfirmSerializer
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data["token"]
+        new_password = serializer.validated_data["password"]
+
+        from .models import PasswordResetToken
+        try:
+            prt = PasswordResetToken.objects.select_related("user").get(token=token)
+        except PasswordResetToken.DoesNotExist:
+            return Response({"detail": "Invalid token"}, status=400)
+
+        if not prt.is_valid():
+            return Response({"detail": "Token expired or already used"}, status=400)
+
+        user = prt.user
+        user.set_password(new_password)
+        user.save()
+
+        # mark used and invalidate any other tokens for this user
+        prt.mark_used()
+        PasswordResetToken.objects.filter(user=user, used=False).update(used=True)
+
+        # Optionally: you might want to invalidate user sessions/refresh tokens here.
+
+        return Response({"detail": "Password updated successfully"})
+
 
 
 class SchoolViewSet(viewsets.ModelViewSet):
@@ -489,4 +577,8 @@ class DashboardViewSet(APIView):
  
         else:
             return Response({"detail": "Unsupported role."}, status=403)
+        
+
+
+
         

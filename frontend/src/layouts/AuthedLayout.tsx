@@ -14,9 +14,12 @@ import {
   FaEdit,
   FaChevronLeft,
   FaChevronRight,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import { useState, useRef, useEffect } from "react";
 import "../sidebar.css";
+import { FaFileArrowDown } from "react-icons/fa6";
 
 export default function AuthedLayout() {
   const { me, loading } = useSession();
@@ -33,6 +36,11 @@ export default function AuthedLayout() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
+
+  // Visibility toggles for each password field
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   if (loading) return <div style={{ padding: 20 }}>Loading…</div>;
   if (!me) {
@@ -314,37 +322,91 @@ export default function AuthedLayout() {
                       />
                     </label>
 
-                    <label style={{ fontSize: 13, color: '#444' }}>
+                    <label style={{ fontSize: 13, color: '#444', position: 'relative' }}>
                       Current password
-                      <input
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        style={{ width: '100%', marginTop: 4, padding: '8px', borderRadius: 4, border: '1px solid #ddd' }}
-                        required
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <input
+                          type={showCurrent ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          style={{ width: '100%', padding: '8px', borderRadius: 4, border: '1px solid #ddd' }}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrent((s) => !s)}
+                          aria-label={showCurrent ? "Hide current password" : "Show current password"}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {showCurrent ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
                     </label>
 
-                    <label style={{ fontSize: 13, color: '#444' }}>
+                    <label style={{ fontSize: 13, color: '#444', position: 'relative' }}>
                       New password
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        style={{ width: '100%', marginTop: 4, padding: '8px', borderRadius: 4, border: '1px solid #ddd' }}
-                        required
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <input
+                          type={showNew ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          style={{ width: '100%', padding: '8px', borderRadius: 4, border: '1px solid #ddd' }}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNew((s) => !s)}
+                          aria-label={showNew ? "Hide new password" : "Show new password"}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {showNew ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
                     </label>
 
-                    <label style={{ fontSize: 13, color: '#444' }}>
+                    <label style={{ fontSize: 13, color: '#444', position: 'relative' }}>
                       Confirm new password
-                      <input
-                        type="password"
-                        value={confirmNewPassword}
-                        onChange={(e) => setConfirmNewPassword(e.target.value)}
-                        style={{ width: '100%', marginTop: 4, padding: '8px', borderRadius: 4, border: '1px solid #ddd' }}
-                        required
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <input
+                          type={showConfirm ? "text" : "password"}
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          style={{ width: '100%', padding: '8px', borderRadius: 4, border: '1px solid #ddd' }}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirm((s) => !s)}
+                          aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {showConfirm ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
                     </label>
 
                     {pwError && <div style={{ color: 'crimson', fontSize: 13 }}>{pwError}</div>}
@@ -361,7 +423,7 @@ export default function AuthedLayout() {
                           borderRadius: 4,
                           backgroundColor: '#2c7be5',
                           color: '#fff',
-                          cursor: 'pointer',
+                          cursor: "pointer",
                           fontWeight: 500,
                         }}
                       >
