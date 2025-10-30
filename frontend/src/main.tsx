@@ -3,6 +3,7 @@ import "./styles.css"
 // import App from "./App"
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import type { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SessionProvider, useSession } from './session'
 import Login from './pages/Login'
@@ -19,7 +20,7 @@ import SchoolUploadLinks from './pages/AdminLinks'
 import ResetPassword from "./pages/ResetPassword"
 
 
-function RequireAuth({ children }: { children: JSX.Element }) {
+function RequireAuth({ children }: { children: ReactNode }) {
   const { me, loading } = useSession()
   if (loading) return <div style={{padding:20}}>Loading…</div>
   if (!me) return <Navigate to="/login" />

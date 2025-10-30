@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Rnd } from "react-rnd";
 import { api } from "../api";
-import { FaPlus, FaTrash } from "react-icons/fa";
+import { FaPlus} from "react-icons/fa";
 
 type Element = {
   id: number;

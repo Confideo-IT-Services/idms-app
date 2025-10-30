@@ -43,11 +43,14 @@ AUTH_USER_MODEL = "idms.User"
 SECRET_KEY = 'django-insecure-*h8k9(coee=vaxn4j(qq_+eq3#-6b^at4%)&8le(1ej+##vq(_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['3.108.86.214', '127.0.0.1', 'localhost']
 
-
+CORS_ALLOWED_ORIGINS = [ 
+    "http://3.108.86.214",
+] 
+CSRF_TRUSTED_ORIGINS = ["http://3.108.86.214",]
 # Application definition
 
 INSTALLED_APPS = [
@@ -111,6 +114,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
 
 
 # Database
@@ -164,12 +169,25 @@ USE_I18N = True
 
 USE_TZ = True
 
+# 🍪 COOKIE / SESSION SECURITY 
+# ========================================================= 
+SESSION_COOKIE_SECURE = False  # change to True after enabling HTTPS 
+CSRF_COOKIE_SECURE = False 
+SESSION_COOKIE_SAMESITE = 'Lax' 
+CSRF_COOKIE_SAMESITE = 'Lax' 
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')   # for collectstatic
 
+# 🧱 SECURITY HEADERS 
+# ========================================================= 
+SECURE_BROWSER_XSS_FILTER = True 
+SECURE_CONTENT_TYPE_NOSNIFF = True 
+X_FRAME_OPTIONS = "SAMEORIGIN" 
 
 # Email configuration using SendGrid
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -178,10 +196,10 @@ EMAIL_PORT = 587
 MAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER = "apikey"  # literal word required by SendGrid
-EMAIL_HOST_PASSWORD = "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"
+EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = "info@confideoit.com"
 FRONTEND_URL = "http://localhost:5173"
 
 
 
-
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

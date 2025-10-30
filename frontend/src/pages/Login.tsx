@@ -1,5 +1,5 @@
 // frontend/src/Login.tsx
-import './Login.css';
+import './login.css';
 import { useState } from 'react'
 import { useNavigate } from "react-router-dom"
 import { api, setAuth } from '../api'
