@@ -4,6 +4,25 @@ from django.utils import timezone
 from datetime import timedelta
 import uuid
 from django.contrib.auth.models import AbstractUser
+import secrets
+from django.utils import timezone
+from datetime import timedelta
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="password_reset_tokens")
+    token = models.CharField(max_length=128, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    def is_valid(self):
+        return (not self.used) and (self.expires_at > timezone.now())
+
+    def mark_used(self):
+        self.used = True
+        self.save(update_fields=['used'])
+
+    def __str__(self):
+        return f"PasswordResetToken(user={self.user_id}, token={self.token[:8]}..., used={self.used})"
 
 def default_expiry():
     return timezone.now() + timedelta(days=14)
@@ -16,6 +35,7 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="SCHOOL_ADMIN")
     school = models.ForeignKey("School", on_delete=models.SET_NULL, null=True, blank=True, related_name="admins")
+    email = models.EmailField(unique=True)
 
     def save(self, *args, **kwargs):
         # auto-fix role for true superusers

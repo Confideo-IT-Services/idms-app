@@ -13,6 +13,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
+
+# Base directory
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env
+load_dotenv(BASE_DIR / ".env")
+
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -35,11 +43,14 @@ AUTH_USER_MODEL = "idms.User"
 SECRET_KEY = 'django-insecure-*h8k9(coee=vaxn4j(qq_+eq3#-6b^at4%)&8le(1ej+##vq(_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['3.108.86.214', '127.0.0.1', 'localhost']
 
-
+CORS_ALLOWED_ORIGINS = [ 
+    "http://3.108.86.214",
+] 
+CSRF_TRUSTED_ORIGINS = ["http://3.108.86.214",]
 # Application definition
 
 INSTALLED_APPS = [
@@ -103,6 +114,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
 
 
 # Database
@@ -156,13 +169,37 @@ USE_I18N = True
 
 USE_TZ = True
 
+# 🍪 COOKIE / SESSION SECURITY 
+# ========================================================= 
+SESSION_COOKIE_SECURE = False  # change to True after enabling HTTPS 
+CSRF_COOKIE_SECURE = False 
+SESSION_COOKIE_SAMESITE = 'Lax' 
+CSRF_COOKIE_SAMESITE = 'Lax' 
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')   # for collectstatic
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+# 🧱 SECURITY HEADERS 
+# ========================================================= 
+SECURE_BROWSER_XSS_FILTER = True 
+SECURE_CONTENT_TYPE_NOSNIFF = True 
+X_FRAME_OPTIONS = "SAMEORIGIN" 
+
+# Email configuration using SendGrid
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_PORT = 587
+MAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = "apikey"  # literal word required by SendGrid
+
+DEFAULT_FROM_EMAIL = "info@confideoit.com"
+FRONTEND_URL = "http://localhost:5173"
+
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

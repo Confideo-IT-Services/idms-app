@@ -1,11 +1,10 @@
 # backend/idcards/utils.py
-from PIL import Image, ImageDraw, ImageFont
-import io, os, math
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+import io, os, math, json
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, A3
 from reportlab.lib.utils import ImageReader
-from django.http import HttpResponse
-import json
+
 MM_TO_PT = 72.0 / 25.4
 IN_TO_PT = 72.0
 
@@ -15,7 +14,6 @@ PAPER_SIZES = {
     "A3": (A3[0], A3[1]),
     "12x18": (12 * IN_TO_PT, 18 * IN_TO_PT),
     "13x19": (13 * IN_TO_PT, 19 * IN_TO_PT),
-    # add more custom presets as needed
 }
 
 DEFAULT_FONT_DIRS = [
@@ -27,7 +25,8 @@ DEFAULT_FONT_DIRS = [
 def mm_to_pt(mm): return mm * MM_TO_PT
 
 def find_font_path(font_name: str):
-    if not font_name: return None
+    if not font_name:
+        return None
     for base in DEFAULT_FONT_DIRS:
         path = os.path.join(base, font_name)
         if os.path.exists(path):
@@ -43,171 +42,99 @@ def load_font(font_name: str, size: int):
         pass
     return ImageFont.load_default()
 
-def paste_photo_exact(card: Image.Image, photo_path: str, x:int,y:int,w:int,h:int):
+def _antialiased_polygon_mask(size, polygon_points):
+    """
+    Create an anti-aliased mask for a polygon by drawing into a larger temporary image and downscaling.
+    size: (w,h)
+    polygon_points: list of (x,y) float coords relative to size
+    """
+    scale = 4  # supersampling factor
+    w, h = size
+    tmp = Image.new("L", (w * scale, h * scale), 0)
+    scaled = [(int(x * scale), int(y * scale)) for (x, y) in polygon_points]
+    ImageDraw.Draw(tmp).polygon(scaled, fill=255)
+    return tmp.resize((w, h), resample=Image.LANCZOS)
+
+def paste_photo_exact(card: Image.Image, photo_path: str, x:int, y:int, w:int, h:int, shape: str | None = None):
+    """
+    Paste photo into `card` at (x,y) with target size (w,h).
+    If `shape` provided, apply a mask (circle, hexagon, rounded rect, etc).
+    Coordinates x,y,w,h are in card pixel coordinates.
+    """
     try:
         img = Image.open(photo_path).convert("RGBA")
     except Exception:
         return
+
+    if w <= 0 or h <= 0:
+        return
+
+    # Resize to cover (like CSS cover): fill the box, center-cropped
     img_w, img_h = img.size
-    if w <= 0 or h <= 0: return
     img_ratio = img_w / img_h
-    box_ratio = w / h
+    box_ratio = float(w) / float(h)
     if img_ratio > box_ratio:
-        new_h = h; new_w = int(round(h * img_ratio))
+        # image wider -> match height
+        new_h = h
+        new_w = int(round(h * img_ratio))
     else:
-        new_w = w; new_h = int(round(w / img_ratio))
+        # image taller or equal -> match width
+        new_w = w
+        new_h = int(round(w / img_ratio))
+
     img = img.resize((new_w, new_h), Image.LANCZOS)
-    left = max(0, (new_w - w)//2); top = max(0, (new_h - h)//2)
-    img = img.crop((left, top, left + w, top + h))
-    card.paste(img, (x,y), img if img.mode == "RGBA" else None)
+    left = max(0, (new_w - w)//2)
+    top = max(0, (new_h - h)//2)
+    cropped = img.crop((left, top, left + w, top + h))
 
+    # dest layer
+    layer = Image.new("RGBA", (w, h), (0,0,0,0))
+    layer.paste(cropped, (0,0), cropped)
 
+    # create mask
+    mask = Image.new("L", (w, h), 0)
+    draw = ImageDraw.Draw(mask)
+    s = (shape or "square")
+    s = str(s).lower()
 
+    if s in ("square", "rectangle"):
+        draw.rectangle([0,0,w,h], fill=255)
+    elif s == "rounded" or s == "round" or s == "rounded_rect":
+        r = int(min(w, h) * 0.12)
+        # PIL's rounded_rectangle may not exist on very old versions; fallback handled
+        try:
+            draw.rounded_rectangle([0,0,w,h], radius=r, fill=255)
+        except Exception:
+            draw.rectangle([0,0,w,h], fill=255)
+    elif s in ("circle", "sphere"):
+        draw.ellipse([0,0,w,h], fill=255)
+    elif s == "hexagon":
+        # Hexagon with points scaled to box, slightly inset to avoid clipping of corners
+        inset = min(w,h) * 0.02
+        cx = w/2.0
+        cy = h/2.0
+        r = min(w,h)/2.0 - inset
+        pts = []
+        for i in range(6):
+            ang = math.radians(-90 + i * 60)
+            px = cx + r * math.cos(ang)
+            py = cy + r * math.sin(ang)
+            pts.append((px, py))
+        # Use supersampled polygon mask for smoother edges
+        mask = _antialiased_polygon_mask((w,h), pts)
+    else:
+        # default full rect
+        draw.rectangle([0,0,w,h], fill=255)
 
-# def render_card_image(student, template):
-#     """Render card image at template background's native pixel size using template.fields (image-pixel coords)."""
-#     bg_path = template.background.path
-#     background = Image.open(bg_path).convert("RGBA")
-#     draw = ImageDraw.Draw(background)
-#     fields = template.fields or {}
+    # Paste with mask (use alpha composite if paste with mask fails)
+    try:
+        card.paste(layer, (x, y), mask)
+    except Exception:
+        tmp = Image.new("RGBA", card.size)
+        tmp.paste(layer, (x, y))
+        card.alpha_composite(tmp)
 
-#     def _normalize_key_variants(key: str):
-#         variants = [key, key.lower(), key.replace(" ", "_"), key.replace(" ", "_").lower()]
-#         return list(dict.fromkeys(variants))  # unique, preserve order
-
-#     def _get_meta_dict(s):
-#         meta = None
-        
-#         if isinstance(s, dict):
-#             # try common meta keys
-#             meta = s.get("meta") or s.get("metadata") or s.get("Meta")
-#         else:
-#             meta = getattr(s, "meta", None)
-#         if isinstance(meta, str):
-#             try:
-#                 meta_parsed = json.loads(meta)
-#                 if isinstance(meta_parsed, dict):
-#                     return meta_parsed
-#             except Exception:
-#                 return {}
-#         if isinstance(meta, dict):
-#             return meta
-#         return {}
-
-#     def _get_from_obj_or_dict(s, key):
-#         """Try to resolve `key` from object attributes and dict keys, and return None if not found."""
-#         # 1) direct attribute (for model instances)
-#         if not isinstance(s, dict):
-#             if hasattr(s, key):
-#                 return getattr(s, key)
-#             # try lowercase attr
-#             lower = key.lower()
-#             if hasattr(s, lower):
-#                 return getattr(s, lower)
-#             snake = key.replace(" ", "_").lower()
-#             if hasattr(s, snake):
-#                 return getattr(s, snake)
-
-#         # 2) dict access
-#         if isinstance(s, dict):
-#             # try key variations
-#             for k in _normalize_key_variants(key):
-#                 if k in s:
-#                     return s[k]
-
-#         return None
-
-#     def get_student_value(s, field_name):
-#         # support nested lookup like "parent.fatherName"
-#         if "." in field_name:
-#             parts = field_name.split(".")
-#             cur = s
-#             for p in parts:
-#                 cur = _get_from_obj_or_dict(cur, p)
-#                 if cur is None:
-#                     # if not found in top-level, try meta on the original student for nested full key
-#                     break
-#             if cur is not None:
-#                 return cur
-
-#         # try direct attribute/key
-#         val = _get_from_obj_or_dict(s, field_name)
-#         if val is not None:
-#             return val
-
-#         # try meta dict
-#         #import ipdb; ipdb.set_trace()
-#         meta = _get_meta_dict(s)
-#         if meta:
-#             for k in _normalize_key_variants(field_name):
-#                 if k in meta:
-#                     return meta[k]
-
-#         # fallback: try other common names: remove non-alphanumeric and try
-#         fallback_key = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in field_name).lower()
-#         if meta and fallback_key in meta:
-#             return meta[fallback_key]
-
-#         return None
-
-#     # deterministic order
-#     for field_name in fields.keys():
-#         cfg = fields[field_name] or {}
-#         x = int(round(cfg.get("x", 0))); y = int(round(cfg.get("y", 0)))
-#         w = int(round(cfg.get("width", cfg.get("w", 0))))
-#         h = int(round(cfg.get("height", cfg.get("h", 0))))
-
-#         if cfg.get("isImage") or field_name.lower() == "photo":
-#             photo_attr = get_student_value(student, "photo")
-#             photo_path = None
-#             if photo_attr is None:
-#                 # also try 'photo_path' or 'photo_url'
-#                 photo_attr = get_student_value(student, "photo_path") or get_student_value(student, "photo_url")
-
-#             # handle different photo shapes: Django FileField, dict, plain string
-#             try:
-#                 if photo_attr is None:
-#                     pass
-#                 elif hasattr(photo_attr, "path"):
-#                     photo_path = photo_attr.path
-#                 elif isinstance(photo_attr, dict):
-#                     # common nested shapes
-#                     photo_path = photo_attr.get("path") or photo_attr.get("url") or photo_attr.get("file")
-#                 elif isinstance(photo_attr, str):
-#                     photo_path = photo_attr
-#                 elif hasattr(photo_attr, "url"):
-#                     # File-like with url
-#                     photo_path = getattr(photo_attr, "url")
-#             except Exception:
-#                 photo_path = None
-
-#             if photo_path:
-#                 try:
-#                     paste_photo_exact(background, photo_path, x, y, w, h)
-#                 except Exception:
-#                     # ignore photo paste errors (keeps other fields rendering)
-#                     pass
-#             continue
-
-#         # fetch text (attribute then meta)
-#         value = get_student_value(student, field_name)
-#         # debug print left intentionally — remove or change to logging as needed
-#         print(field_name, value)
-#         if value is None:
-#             continue
-#         text = str(value)
-#         font_name = cfg.get("font", "arial.ttf")
-#         font_size = int(round(cfg.get("size", max(10, (h//2 if h else 14)))))
-#         font = load_font(font_name, font_size)
-#         color = cfg.get("color", "#000000")
-#         try:
-#             draw.text((x, y), text, fill=color, font=font)
-#         except Exception:
-#             draw.text((x, y), text, fill=color)
-
-#     return background.convert("RGB")
-
-
+# ---------- render_card_image with helpers ----------
 def render_card_image(student, template):
     """Render card image at template background's native pixel size using template.fields (image-pixel coords)."""
     bg_path = template.background.path
@@ -215,9 +142,16 @@ def render_card_image(student, template):
     draw = ImageDraw.Draw(background)
     fields = template.fields or {}
 
+    # helper functions
     def _normalize_key_variants(key: str):
         variants = [key, key.lower(), key.replace(" ", "_"), key.replace(" ", "_").lower()]
-        return list(dict.fromkeys(variants))  # unique, preserve order
+        seen = set()
+        out = []
+        for v in variants:
+            if v not in seen:
+                seen.add(v)
+                out.append(v)
+        return out
 
     def _get_meta_dict(s):
         meta = None
@@ -227,9 +161,9 @@ def render_card_image(student, template):
             meta = getattr(s, "meta", None)
         if isinstance(meta, str):
             try:
-                meta_parsed = json.loads(meta)
-                if isinstance(meta_parsed, dict):
-                    return meta_parsed
+                parsed = json.loads(meta)
+                if isinstance(parsed, dict):
+                    return parsed
             except Exception:
                 return {}
         if isinstance(meta, dict):
@@ -253,6 +187,7 @@ def render_card_image(student, template):
         return None
 
     def get_student_value(s, field_name):
+        # nested lookup support
         if "." in field_name:
             parts = field_name.split(".")
             cur = s
@@ -276,18 +211,23 @@ def render_card_image(student, template):
         fallback_key = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in field_name).lower()
         if meta and fallback_key in meta:
             return meta[fallback_key]
-
         return None
 
-    # deterministic order
-    for field_name in fields.keys():
+    # debug: print template fields to server logs to verify 'shape' and 'align'
+    try:
+        print("TEMPLATE FIELDS:", json.dumps(fields, indent=2))
+    except Exception:
+        print("TEMPLATE FIELDS (raw):", fields)
+
+    # iterate in deterministic order
+    for field_name in list(fields.keys()):
         cfg = fields[field_name] or {}
         x = int(round(cfg.get("x", 0)))
         y = int(round(cfg.get("y", 0)))
         w = int(round(cfg.get("width", cfg.get("w", 0))))
         h = int(round(cfg.get("height", cfg.get("h", 0))))
 
-        # --- handle photo fields ---
+        # image/photo
         if cfg.get("isImage") or field_name.lower() == "photo":
             photo_attr = get_student_value(student, "photo")
             photo_path = None
@@ -310,65 +250,69 @@ def render_card_image(student, template):
 
             if photo_path:
                 try:
-                    paste_photo_exact(background, photo_path, x, y, w, h)
+                    shape = cfg.get("shape")
+                    paste_photo_exact(background, photo_path, x, y, w, h, shape=shape)
                 except Exception:
                     pass
             continue
 
-        # --- handle text fields ---
+                # ---------- TEXT FIELDS (auto font shrink to fit box, no wrap) ----------
         value = get_student_value(student, field_name)
-        print(field_name, value)
         if value is None:
             continue
 
-        text = str(value)
+        text = str(value).strip()
         font_name = cfg.get("font", "arial.ttf")
-        font_size = int(round(cfg.get("size", max(10, (h // 2 if h else 14)))))
-        font = load_font(font_name, font_size)
+        base_font_size = int(round(cfg.get("size", max(10, (h // 2 if h else 14)))))
         color = cfg.get("color", "#000000")
+        align = (cfg.get("align") or "left").lower()
 
-        # ---------- NEW: WORD WRAPPING ----------
-        max_width = w if w > 0 else background.width
-        lines = []
-        words = text.split()
-        current = ""
-        for word in words:
-            test_line = (current + " " + word).strip()
-            tw, th = draw.textbbox((0, 0), test_line, font=font)[2:]
-            if tw <= max_width:
-                current = test_line
-            else:
-                if current:
-                    lines.append(current)
-                current = word
-        if current:
-            lines.append(current)
+        max_width = max(1, int(w or background.width))
+        max_height = max(1, int(h or background.height))
 
-        line_height = draw.textbbox((0, 0), "Ag", font=font)[3] - draw.textbbox((0, 0), "Ag", font=font)[1]
-        total_text_height = len(lines) * line_height
+        # Start from base size, shrink proportionally until it fits
+        font_size = base_font_size
+        font = load_font(font_name, font_size)
 
-        # vertical centering
-        start_y = y
-        if total_text_height < h:
-            start_y = y + (h - total_text_height) // 2
+        # Measure text width and height and adjust font size
+        while font_size > 6:
+            try:
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_w = bbox[2] - bbox[0]
+                text_h = bbox[3] - bbox[1]
+            except Exception:
+                text_w, text_h = draw.textsize(text, font=font)
 
-        # draw each line centered horizontally
-        for i, line in enumerate(lines):
-            tw, _ = draw.textbbox((0, 0), line, font=font)[2:]
-            line_x = x + max(0, (max_width - tw) // 2)
-            draw.text((line_x, start_y + i * line_height), line, fill=color, font=font)
-    # ---------------------------------------------
+            if text_w <= max_width and text_h <= max_height:
+                break
+            font_size -= 1
+            font = load_font(font_name, font_size)
 
+        # Final bounding box check
+        try:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+        except Exception:
+            text_w, text_h = draw.textsize(text, font=font)
+
+        # Center vertically within box
+        start_y = y + max(0, (h - text_h) // 2)
+
+        # Align horizontally
+        if align == "center":
+            text_x = x + max(0, (w - text_w) // 2)
+        elif align == "right":
+            text_x = x + max(0, (w - text_w))
+        else:
+            text_x = x
+
+        # Draw single-line, auto-shrunk text
+        draw.text((text_x, start_y), text, fill=color, font=font)
     return background.convert("RGB")
 
-
+# ---------- grid + PDF functions (unchanged logic) ----------
 def compute_grid(paper_w_pt, paper_h_pt, card_w_pt, card_h_pt, margin_pt=18, spacing_pt=8):
-    """
-    Exact floor-fitting grid calculator.
-    Returns: cols, rows, per_page, x_start_pt, y_top_pt, used_w, used_h
-    x_start_pt: left x of first card.
-    y_top_pt: top y coordinate of the first row (ReportLab coords from bottom, we will compute Y when drawing).
-    """
     inner_w = paper_w_pt - 2 * margin_pt
     inner_h = paper_h_pt - 2 * margin_pt
     if inner_w <= 0 or inner_h <= 0:
@@ -380,17 +324,11 @@ def compute_grid(paper_w_pt, paper_h_pt, card_w_pt, card_h_pt, margin_pt=18, spa
     used_w = cols * card_w_pt + (cols - 1) * spacing_pt
     used_h = rows * card_h_pt + (rows - 1) * spacing_pt
     x_start = margin_pt + max(0, (inner_w - used_w)/2)
-    # compute top Y (ReportLab origin bottom-left; top y for first row = page_h - margin - top_offset)
     top_offset = (inner_h - used_h)/2
     y_top = paper_h_pt - margin_pt - top_offset
     return cols, rows, cols*rows, x_start, y_top, used_w, used_h
 
 def generate_id_cards(students, template, paper="A4", margin_mm=10, spacing_mm=3, max_pages=None):
-    """
-    Pack cards into the paper using exact grid computed above.
-    template.card_size_mm expected.
-    Returns BytesIO (PDF).
-    """
     if isinstance(paper, str):
         paper = paper.upper()
         if paper not in PAPER_SIZES:
@@ -427,7 +365,6 @@ def generate_id_cards(students, template, paper="A4", margin_mm=10, spacing_mm=3
         row = idx // cols
 
         x_pt = x_start_pt + col * (card_w_pt + spacing_pt)
-        # compute y: top y minus rows offset minus card height
         y_pt = y_top_pt - row * (card_h_pt + spacing_pt) - card_h_pt
 
         c.drawImage(img, x_pt, y_pt, width=card_w_pt, height=card_h_pt)

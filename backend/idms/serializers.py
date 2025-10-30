@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import School, ClassRoom, Student, UploadLink, FormTemplate, User, IdCardTemplate
 
+
 class SchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = School
@@ -224,3 +225,9 @@ class ChangePasswordSerializer(serializers.Serializer):
         attrs["_old"] = old
         attrs["_new"] = new
         return attrs
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    password = serializers.CharField(min_length=6)
