@@ -1,6 +1,6 @@
 // frontend/src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./Login";
+import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 
 export default function App() {
