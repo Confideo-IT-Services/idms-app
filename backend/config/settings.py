@@ -45,12 +45,12 @@ SECRET_KEY = 'django-insecure-*h8k9(coee=vaxn4j(qq_+eq3#-6b^at4%)&8le(1ej+##vq(_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['3.108.86.214', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['13.204.192.160', '127.0.0.1', 'localhost']
 
 CORS_ALLOWED_ORIGINS = [ 
-    "http://3.108.86.214",
+    "http://13.204.192.160",
 ] 
-CSRF_TRUSTED_ORIGINS = ["http://3.108.86.214",]
+CSRF_TRUSTED_ORIGINS = ["http://13.204.192.160",]
 # Application definition
 
 INSTALLED_APPS = [
